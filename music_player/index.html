@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>music player generator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Pretendard', 'Apple SD Gothic Neo', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+</head>
+<body class="m-0 flex min-h-screen justify-center bg-[#f9faf9] p-0 font-sans text-[#333] max-md:px-2.5 max-md:py-5">
+
+<div id="youtube-audio" class="pointer-events-none fixed -left-0.5 -top-0.5 h-px w-px overflow-hidden"></div>
+
+<div class="maker-container relative flex min-h-screen w-full max-w-[1500px] items-center justify-center px-[380px] max-md:min-h-0 max-md:flex-col max-md:gap-5 max-md:px-0">
+  <aside class="side-panel side-panel-left absolute inset-y-0 left-0 box-border flex min-h-full w-80 flex-col justify-start overflow-y-auto border-r border-[#d9ddd9] bg-white p-[30px] max-md:static max-md:min-h-0 max-md:w-full max-md:max-w-80 max-md:rounded-[20px] max-md:border-0 max-md:p-5 max-md:shadow-[0_10px_20px_rgba(0,0,0,0.05)]">
+    <div class="panel-header mb-6">
+      <h2 class="mb-1.5 mt-0 text-xl text-[#474747]">source</h2>
+      <p class="m-0 text-[13px] leading-normal text-[#7a7a7a]">複数ジェネレーター用のタブエリア</p>
+    </div>
+    <div class="tab-panel-placeholder min-h-60 flex-1 rounded-2xl border border-dashed border-[#cfd4cf] bg-gradient-to-b from-[#fbfcfb] to-[#f2f4f2]"></div>
+  </aside>
+
+  <div class="input-section side-panel side-panel-right absolute inset-y-0 right-0 box-border flex min-h-full w-80 flex-col justify-start overflow-y-auto border-l border-[#d9ddd9] bg-white p-[30px] max-md:static max-md:min-h-0 max-md:w-full max-md:max-w-80 max-md:rounded-[20px] max-md:border-0 max-md:p-5 max-md:shadow-[0_10px_20px_rgba(0,0,0,0.05)]">
+    <h2 class="mb-[15px] mt-0 text-xl text-[#474747]">music player</h2>
+    <div class="input-group mb-[15px]">
+      <label class="mb-[5px] block text-[13px] font-bold text-[#4c4c4c]">title</label>
+      <input class="box-border w-full rounded-lg border border-[#ddd] px-2.5 py-2.5 text-sm outline-none transition focus:border-[#999]" type="text" id="in-title" placeholder="ex. タイトルまたはキャッチフレーズ">
+    </div>
+    <div class="input-group mb-[15px]">
+      <label class="mb-[5px] block text-[13px] font-bold text-[#4c4c4c]">name</label>
+      <input class="box-border w-full rounded-lg border border-[#ddd] px-2.5 py-2.5 text-sm outline-none transition focus:border-[#999]" type="text" id="in-artist" placeholder="ex. アーティスト">
+    </div>
+    <div class="input-group mb-[15px]">
+      <label class="mb-[5px] block text-[13px] font-bold text-[#4c4c4c]">画像ファイルを添付</label>
+      <input class="box-border w-full rounded-lg border border-[#ddd] bg-[#fafafa] p-2 text-xs text-[#7a6a5d] file:mr-3 file:rounded-md file:border-0 file:bg-[#ededed] file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-[#4c4c4c]" type="file" id="in-image" accept="image/*">
+    </div>
+    <div class="input-group mb-[15px]">
+      <label class="mb-[5px] block text-[13px] font-bold text-[#4c4c4c]">YouTube ID (v= の後の英字)</label>
+      <input class="box-border w-full rounded-lg border border-[#ddd] px-2.5 py-2.5 text-sm outline-none transition focus:border-[#999]" type="text" id="in-youtube" placeholder="ex. w2-uvGZCe3g">
+    </div>
+    <div class="input-group mb-[15px]">
+      <label class="mb-[5px] block text-[13px] font-bold text-[#4c4c4c]">出典 (ⓒ)</label>
+      <input class="box-border w-full rounded-lg border border-[#ddd] px-2.5 py-2.5 text-sm outline-none transition focus:border-[#999]" type="text" id="in-copyright" placeholder="ⓒ 依頼主">
+    </div>
+
+    <div class="color-pickers flex gap-2.5">
+      <div class="input-group mb-[15px] flex-1">
+        <label class="mb-[5px] block text-[13px] font-bold text-[#4c4c4c]">背景色</label>
+        <input class="h-10 w-full cursor-pointer rounded-lg border-0 bg-transparent p-0" type="color" id="in-bg-color" value="#f9faf9">
+      </div>
+      <div class="input-group mb-[15px] flex-1">
+        <label class="mb-[5px] block text-[13px] font-bold text-[#4c4c4c]">アクセントカラー</label>
+        <input class="h-10 w-full cursor-pointer rounded-lg border-0 bg-transparent p-0" type="color" id="in-point-color" value="#757575">
+      </div>
+      <div class="input-group mb-[15px] flex-1">
+        <label class="mb-[5px] block text-[13px] font-bold text-[#4c4c4c]">文字色</label>
+        <input class="h-10 w-full cursor-pointer rounded-lg border-0 bg-transparent p-0" type="color" id="in-text-color" value="#424242">
+      </div>
+    </div>
+
+    <button class="btn-add mb-2.5 mt-2.5 w-full cursor-pointer rounded-lg border-0 bg-[#515151] p-3 font-bold text-white transition hover:bg-[#444]" id="btn-update">適用する (プレビュー)</button>
+    <button class="btn-download w-full cursor-pointer rounded-lg border-0 bg-[#3d3d3d] p-3 font-bold text-white transition hover:bg-[#303030]" id="btn-capture">画像として保存</button>
+  </div>
+
+  <div id="capture-area" class="flex w-full justify-center max-md:w-auto">
+    <div class="music-player-card relative box-border w-80 rounded-[20px] border-2 border-[#e5e5e5] bg-[var(--player-bg)] p-5 shadow-[0_10px_20px_rgba(0,0,0,0.05)] [--player-bg:#f7f7f7] [--player-point:#999999] [--player-text:#494949]" id="player-card">
+
+      <div class="cover-wrapper relative mb-[5px] aspect-square w-full overflow-hidden rounded-xl border border-black/10 bg-black/5">
+        <div id="cover-img" class="absolute inset-0 h-full w-full bg-cover bg-center bg-no-repeat" style="background-image: url('https://via.placeholder.com/300/e0dcd3/8c7f76?text=Image+Here')"></div>
+      </div>
+
+      <div class="copyright-text mb-[15px] pr-0.5 text-right text-[10px] text-[var(--player-text)] opacity-60" id="copyright-text">ⓒ 出典</div>
+
+      <div class="song-info mb-[15px] text-[var(--player-text)]">
+        <div class="song-title mb-1 text-lg font-bold" id="song-title">曲のタイトル</div>
+        <div class="song-artist text-[13px] opacity-80" id="song-artist">アーティスト名</div>
+      </div>
+
+      <div class="custom-slider-container relative my-2.5 flex h-5 w-full items-center">
+        <div class="slider-track absolute h-1 w-full rounded-sm bg-[var(--player-point)] opacity-30"></div>
+        <div class="slider-fill absolute h-1 w-0 rounded-sm bg-[var(--player-point)]" id="progress-fill"></div>
+        <div class="slider-thumb pointer-events-none absolute left-0 h-3.5 w-3.5 -translate-x-1/2 rounded-full bg-[var(--player-point)]" id="progress-thumb"></div>
+        <input class="absolute inset-0 z-[5] m-0 h-full w-full cursor-pointer opacity-0" type="range" id="progress-slider" value="0" min="0" max="100">
+      </div>
+
+      <div class="controls mb-[15px] mt-[5px] flex items-center justify-center gap-[30px]">
+        <button class="flex h-6 w-6 cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-[var(--player-point)]" type="button" aria-label="前へ"><i class="iconsax block !h-full !w-full fill-current [&_svg]:block [&_svg]:!h-full [&_svg]:!w-full" icon="previous"></i></button>
+        <button class="flex h-9 w-9 cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-[var(--player-point)]" type="button" id="btn-play" aria-label="再生と一時停止">
+          <span class="flex h-full w-full" id="icon-play"><i class="iconsax block !h-full !w-full fill-current [&_svg]:block [&_svg]:!h-full [&_svg]:!w-full" icon="play"></i></span>
+          <span class="hidden h-full w-full" id="icon-pause"><i class="iconsax block !h-full !w-full fill-current [&_svg]:block [&_svg]:!h-full [&_svg]:!w-full" icon="pause"></i></span>
+        </button>
+        <button class="flex h-6 w-6 cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-[var(--player-point)]" type="button" aria-label="次へ"><i class="iconsax block !h-full !w-full fill-current [&_svg]:block [&_svg]:!h-full [&_svg]:!w-full" icon="next"></i></button>
+      </div>
+
+      <div class="volume-container flex items-center gap-2.5 px-2.5 text-sm">
+        <span class="flex h-6 w-6 items-center justify-center text-[var(--player-point)]"><i class="iconsax block !h-full !w-full fill-current [&_svg]:block [&_svg]:!h-full [&_svg]:!w-full" icon="volume-low"></i></span>
+        <div class="custom-slider-container relative m-0 flex h-5 w-full items-center">
+          <div class="slider-track absolute h-1 w-full rounded-sm bg-[var(--player-point)] opacity-30"></div>
+          <div class="slider-fill absolute h-1 w-0 rounded-sm bg-[var(--player-point)]" id="volume-fill" style="width: 50%;"></div>
+          <div class="slider-thumb pointer-events-none absolute left-0 h-3.5 w-3.5 -translate-x-1/2 rounded-full bg-[var(--player-point)]" id="volume-thumb" style="left: 50%;"></div>
+          <input class="absolute inset-0 z-[5] m-0 h-full w-full cursor-pointer opacity-0" type="range" id="volume-slider" value="50" min="0" max="100">
+        </div>
+        <span class="flex h-6 w-6 items-center justify-center text-[var(--player-point)]"><i class="iconsax block !h-full !w-full fill-current [&_svg]:block [&_svg]:!h-full [&_svg]:!w-full" icon="volume-high"></i></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://grxvityhj.github.io/iconsax/script.js" defer></script>
+<script type="module" src="app.js"></script>
+</body>
+</html>
