@@ -1,5 +1,21 @@
 // ---- Constants ----
-const DEFAULT_COVER = 'https://via.placeholder.com/300/1a1825/5b4fe0?text=Cover+Art';
+// 外部プレースホルダーサービスに依存しないよう、デフォルトカバーはインライン SVG
+const DEFAULT_COVER = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" width="340" height="340" viewBox="0 0 340 340">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2e2222"/>
+      <stop offset="1" stop-color="#141010"/>
+    </linearGradient>
+  </defs>
+  <rect width="340" height="340" fill="url(#g)"/>
+  <g fill="rgba(255,255,255,0.5)" transform="translate(170 170) scale(4.6) translate(-12 -12)">
+    <path d="M9 18V5l12-2v13"/>
+    <path d="M9 18V5l12-2v13" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="6" cy="18" r="3"/>
+    <circle cx="18" cy="16" r="3"/>
+  </g>
+</svg>`);
 
 // ---- State ----
 let player = null;
@@ -8,6 +24,44 @@ let isPlayerReady = false;
 let pendingVideoId = null;
 let isPlaying = false;
 let uploadedImageSrc = DEFAULT_COVER;
+
+// ---- Color helpers ----
+// YT Music の Now Playing はほぼフラットな暗色背景。
+// BG カラーを基準に上方向へわずかに明るいグラデーションを作る。
+function shadeColor(hex, percent) {
+  const n = parseInt(hex.slice(1), 16);
+  const amt = Math.round(2.55 * percent);
+  const r = Math.min(255, Math.max(0, (n >> 16) + amt));
+  const g = Math.min(255, Math.max(0, ((n >> 8) & 0xff) + amt));
+  const b = Math.min(255, Math.max(0, (n & 0xff) + amt));
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+// ---- Time helpers ----
+function formatTime(sec) {
+  if (!isFinite(sec) || sec < 0) return '-:--';
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+// YT Music は残り時間ではなく合計時間を表示する
+function updateTimeLabels(currentTime, duration) {
+  document.getElementById('time-current').innerText = formatTime(currentTime);
+  document.getElementById('time-total').innerText = duration > 0 ? formatTime(duration) : '-:--';
+}
+
+function setProgress(percent) {
+  document.getElementById('progress-slider').value = percent;
+  document.getElementById('progress-fill').style.width = percent + '%';
+  document.getElementById('progress-thumb').style.left = percent + '%';
+}
+
+function setPlayingUI(playing) {
+  isPlaying = playing;
+  document.getElementById('icon-play').style.display = playing ? 'none' : 'flex';
+  document.getElementById('icon-pause').style.display = playing ? 'flex' : 'none';
+}
 
 // ---- YouTube IFrame API ----
 window.onYouTubeIframeAPIReady = () => {
@@ -38,21 +92,16 @@ function onPlayerStateChange(event) {
       const duration = player.getDuration();
       const currentTime = player.getCurrentTime();
       if (duration > 0) {
-        const percent = (currentTime / duration) * 100;
-        document.getElementById('progress-slider').value = percent;
-        document.getElementById('progress-fill').style.width = percent + '%';
-        document.getElementById('progress-thumb').style.left = percent + '%';
+        setProgress((currentTime / duration) * 100);
+        updateTimeLabels(currentTime, duration);
       }
     }, 500);
   } else {
     clearInterval(timeUpdater);
     if (event.data === YT.PlayerState.ENDED) {
-      isPlaying = false;
-      document.getElementById('icon-play').style.display = 'flex';
-      document.getElementById('icon-pause').style.display = 'none';
-      document.getElementById('progress-slider').value = 0;
-      document.getElementById('progress-fill').style.width = '0%';
-      document.getElementById('progress-thumb').style.left = '0%';
+      setPlayingUI(false);
+      setProgress(0);
+      updateTimeLabels(0, player && typeof player.getDuration === 'function' ? player.getDuration() : 0);
     }
   }
 }
@@ -117,9 +166,11 @@ function applyPreview() {
   const youtubeId = song.youtubeId;
 
   const card = document.getElementById('player-card');
-  card.style.setProperty('--player-bg',    song.bgColor);
+  card.style.background =
+    `linear-gradient(180deg, ${shadeColor(song.bgColor, 9)} 0%, ${song.bgColor} 55%)`;
   card.style.setProperty('--player-point', song.pointColor);
   card.style.setProperty('--player-text',  song.textColor);
+  card.style.color = song.textColor;
 
   document.getElementById('song-title').innerText     = title;
   document.getElementById('song-artist').innerText    = artist;
@@ -129,9 +180,9 @@ function applyPreview() {
   if (youtubeId) {
     if (player && typeof player.cueVideoById === 'function') {
       player.cueVideoById(youtubeId);
-      document.getElementById('icon-play').style.display  = 'flex';
-      document.getElementById('icon-pause').style.display = 'none';
-      isPlaying = false;
+      setPlayingUI(false);
+      setProgress(0);
+      updateTimeLabels(0, 0);
     } else if (typeof YT !== 'undefined' && YT.Player) {
       _createYTPlayer(youtubeId);
     } else {
@@ -150,7 +201,7 @@ document.getElementById('btn-capture').addEventListener('click', () => {
   const target = document.getElementById('player-card');
   htmlToImage.toPng(target, { pixelRatio: 4 }).then((dataUrl) => {
     const link = document.createElement('a');
-    link.download = 'my_custom_player.png';
+    link.download = 'youtube_music_player.png';
     link.href = dataUrl;
     link.click();
   }).catch((e) => {
@@ -165,14 +216,11 @@ document.getElementById('btn-play').addEventListener('click', () => {
   }
   if (isPlaying) {
     player.pauseVideo();
-    document.getElementById('icon-play').style.display  = 'flex';
-    document.getElementById('icon-pause').style.display = 'none';
+    setPlayingUI(false);
   } else {
     player.playVideo();
-    document.getElementById('icon-play').style.display  = 'none';
-    document.getElementById('icon-pause').style.display = 'flex';
+    setPlayingUI(true);
   }
-  isPlaying = !isPlaying;
 });
 
 // ---- 再生位置スライダー ----
@@ -181,7 +229,9 @@ document.getElementById('progress-slider').addEventListener('input', (e) => {
   document.getElementById('progress-fill').style.width = val + '%';
   document.getElementById('progress-thumb').style.left = val + '%';
   if (player && typeof player.getDuration === 'function') {
-    player.seekTo(player.getDuration() * (val / 100));
+    const duration = player.getDuration();
+    player.seekTo(duration * (val / 100));
+    updateTimeLabels(duration * (val / 100), duration);
   }
 });
 
@@ -192,3 +242,6 @@ document.getElementById('volume-slider').addEventListener('input', (e) => {
   document.getElementById('volume-thumb').style.left = val + '%';
   if (player && typeof player.setVolume === 'function') player.setVolume(val);
 });
+
+// ---- 初期化 ----
+applyPreview();

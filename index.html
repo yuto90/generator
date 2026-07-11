@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>music player generators</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: #0a0a0f;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+      color: #e2e2ea;
+      display: flex;
+    }
+
+    /* ---- Sidebar ---- */
+    .sidebar {
+      width: 240px;
+      flex-shrink: 0;
+      height: 100vh;
+      position: sticky;
+      top: 0;
+      display: flex;
+      flex-direction: column;
+      padding: 24px 14px;
+      background: rgba(255,255,255,0.03);
+      border-right: 1px solid rgba(255,255,255,0.08);
+    }
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 10px;
+      margin-bottom: 6px;
+    }
+    .sidebar-header .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #7c6af0, #fa2d48);
+    }
+    .sidebar-header h1 {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.9);
+      margin: 0;
+    }
+    .sidebar-sub {
+      font-size: 11px;
+      color: rgba(255,255,255,0.3);
+      padding: 0 10px;
+      margin: 0 0 20px;
+    }
+
+    .gen-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 4px;
+      border: 1px solid transparent;
+      border-radius: 12px;
+      background: transparent;
+      color: inherit;
+      font-family: inherit;
+      text-align: left;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .gen-item:hover { background: rgba(255,255,255,0.05); }
+    .gen-item.active {
+      background: rgba(255,255,255,0.07);
+      border-color: rgba(255,255,255,0.12);
+    }
+
+    .gen-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 9px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+    }
+    .gen-icon svg { width: 18px; height: 18px; fill: #fff; }
+
+    .gen-info { min-width: 0; }
+    .gen-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.88);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .gen-desc {
+      font-size: 11px;
+      color: rgba(255,255,255,0.33);
+      margin-top: 1px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 0 10px;
+      font-size: 10px;
+      color: rgba(255,255,255,0.2);
+    }
+
+    /* ---- Main ---- */
+    .main {
+      flex: 1;
+      min-width: 0;
+      height: 100vh;
+    }
+    .main iframe {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: #0a0a0f;
+    }
+
+    /* ---- Responsive ---- */
+    @media (max-width: 768px) {
+      body { flex-direction: column; }
+      .sidebar {
+        width: 100%;
+        height: auto;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+        padding: 12px;
+        overflow-x: auto;
+        background: #12121a;
+        border-right: none;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+      }
+      .sidebar-header, .sidebar-sub, .sidebar-footer, .gen-desc { display: none; }
+      .gen-item { width: auto; margin-bottom: 0; flex-shrink: 0; }
+      /* iframe はモバイルで中身の高さに合わせる(JS が設定)ため auto */
+      .main { height: auto; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ---- Left sidebar: generator list ---- -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="dot"></div>
+      <h1>Generators</h1>
+    </div>
+    <p class="sidebar-sub">作りたいプレーヤーを選択</p>
+    <nav id="gen-list"></nav>
+    <div class="sidebar-footer">music player generators</div>
+  </aside>
+
+  <!-- ---- Main: selected generator ---- -->
+  <main class="main">
+    <iframe id="gen-frame" title="generator preview"></iframe>
+  </main>
+
+  <script>
+    const GENERATORS = [
+      {
+        id: 'music_player',
+        name: 'Music Player',
+        desc: '汎用グラスデザイン',
+        path: 'music_player/',
+        color: 'linear-gradient(135deg, #7c6af0, #5b4fe0)',
+        icon: '<svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>',
+      },
+      {
+        id: 'apple_music_player',
+        name: 'Apple Music',
+        desc: 'Now Playing 風カード',
+        path: 'apple_music_player/',
+        color: 'linear-gradient(135deg, #fa2d48, #b91d33)',
+        icon: '<svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>',
+      },
+      {
+        id: 'youtube_music_player',
+        name: 'YouTube Music',
+        desc: 'ダークテーマ再生画面',
+        path: 'youtube_music_player/',
+        color: 'linear-gradient(135deg, #ff1a1a, #990000)',
+        icon: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="#fff" stroke-width="2"/><path d="M10 8.6v6.8c0 .5.55.8.97.53l5.2-3.4a.62.62 0 0 0 0-1.06l-5.2-3.4a.62.62 0 0 0-.97.53z"/></svg>',
+      },
+    ];
+
+    const listEl = document.getElementById('gen-list');
+    const frameEl = document.getElementById('gen-frame');
+
+    function select(id, updateHash = true) {
+      const gen = GENERATORS.find(g => g.id === id) || GENERATORS[0];
+      frameEl.src = gen.path;
+      if (updateHash) history.replaceState(null, '', '#' + gen.id);
+      document.querySelectorAll('.gen-item').forEach(el => {
+        el.classList.toggle('active', el.dataset.id === gen.id);
+      });
+    }
+
+    GENERATORS.forEach(gen => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'gen-item';
+      btn.dataset.id = gen.id;
+      btn.innerHTML = `
+        <div class="gen-icon" style="background: ${gen.color}">${gen.icon}</div>
+        <div class="gen-info">
+          <div class="gen-name">${gen.name}</div>
+          <div class="gen-desc">${gen.desc}</div>
+        </div>
+      `;
+      btn.addEventListener('click', () => select(gen.id));
+      listEl.appendChild(btn);
+    });
+
+    // ----- モバイル: iframe の高さを中身に合わせ、二重スクロールを防ぐ -----
+    // (全ページが同一オリジンなので contentWindow を参照できる)
+    let frameObserver = null;
+    function syncFrameHeight() {
+      const isMobile = window.matchMedia('(max-width: 768px)').matches;
+      if (!isMobile) { frameEl.style.height = ''; return; }
+      try {
+        const doc = frameEl.contentWindow.document;
+        frameEl.style.height = doc.documentElement.scrollHeight + 'px';
+      } catch (e) { /* クロスオリジン等では無視 */ }
+    }
+    frameEl.addEventListener('load', () => {
+      syncFrameHeight();
+      try {
+        if (frameObserver) frameObserver.disconnect();
+        frameObserver = new ResizeObserver(syncFrameHeight);
+        frameObserver.observe(frameEl.contentWindow.document.body);
+      } catch (e) { /* ResizeObserver 非対応時は無視 */ }
+    });
+    window.addEventListener('resize', syncFrameHeight);
+
+    // URL ハッシュで初期選択を復元(リロード・共有対応)
+    select(location.hash.slice(1) || GENERATORS[0].id, false);
+
+    // ブラウザの戻る/進むやハッシュ直接変更にも追従
+    window.addEventListener('hashchange', () => {
+      select(location.hash.slice(1) || GENERATORS[0].id, false);
+    });
+  </script>
+</body>
+</html>

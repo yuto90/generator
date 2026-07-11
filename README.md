@@ -12,9 +12,14 @@ cd /Users/apple/dev/generator
 python3 -m http.server 8000
 ```
 
-起動後、ブラウザで各アプリにアクセスします。
+起動後、http://127.0.0.1:8000/ を開くとポータル画面が表示されます。
+左サイドバーからジェネレータを選ぶと、メイン画面に表示されます。
+
+各アプリに直接アクセスすることもできます。
 
 - music_player: http://127.0.0.1:8000/music_player/
+- apple_music_player: http://127.0.0.1:8000/apple_music_player/
+- youtube_music_player: http://127.0.0.1:8000/youtube_music_player/
 
 今後アプリが増えた場合も、同じサーバーで次のように開けます。
 
