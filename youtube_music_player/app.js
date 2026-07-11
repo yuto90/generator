@@ -166,7 +166,6 @@ function applyPreview() {
   const youtubeId = song.youtubeId;
 
   const card = document.getElementById('player-card');
-  // html2canvas は color-mix 非対応のため、グラデーションは JS 側で組み立てる
   card.style.background =
     `linear-gradient(180deg, ${shadeColor(song.bgColor, 9)} 0%, ${song.bgColor} 55%)`;
   card.style.setProperty('--player-point', song.pointColor);
@@ -196,17 +195,17 @@ function applyPreview() {
 document.getElementById('btn-update').addEventListener('click', applyPreview);
 
 // ---- 画像キャプチャ ----
+// html-to-image はブラウザ自身の描画(SVG foreignObject)を使うため、
+// プレビューと同一の見た目で保存できる
 document.getElementById('btn-capture').addEventListener('click', () => {
   const target = document.getElementById('player-card');
-  html2canvas(target, {
-    backgroundColor: null,
-    scale: 4,
-    useCORS: true,
-  }).then((canvas) => {
+  htmlToImage.toPng(target, { pixelRatio: 4 }).then((dataUrl) => {
     const link = document.createElement('a');
     link.download = 'youtube_music_player.png';
-    link.href = canvas.toDataURL('image/png', 1.0);
+    link.href = dataUrl;
     link.click();
+  }).catch((e) => {
+    alert('画像の生成に失敗しました: ' + e.message);
   });
 });
 
