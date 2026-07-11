@@ -136,18 +136,22 @@
       .sidebar {
         width: 100%;
         height: auto;
-        position: static;
+        position: sticky;
+        top: 0;
+        z-index: 10;
         flex-direction: row;
         align-items: center;
         gap: 8px;
         padding: 12px;
         overflow-x: auto;
+        background: #12121a;
         border-right: none;
         border-bottom: 1px solid rgba(255,255,255,0.08);
       }
       .sidebar-header, .sidebar-sub, .sidebar-footer, .gen-desc { display: none; }
       .gen-item { width: auto; margin-bottom: 0; flex-shrink: 0; }
-      .main { height: calc(100vh - 61px); }
+      /* iframe はモバイルで中身の高さに合わせる(JS が設定)ため auto */
+      .main { height: auto; }
     }
   </style>
 </head>
@@ -224,6 +228,27 @@
       btn.addEventListener('click', () => select(gen.id));
       listEl.appendChild(btn);
     });
+
+    // ----- モバイル: iframe の高さを中身に合わせ、二重スクロールを防ぐ -----
+    // (全ページが同一オリジンなので contentWindow を参照できる)
+    let frameObserver = null;
+    function syncFrameHeight() {
+      const isMobile = window.matchMedia('(max-width: 768px)').matches;
+      if (!isMobile) { frameEl.style.height = ''; return; }
+      try {
+        const doc = frameEl.contentWindow.document;
+        frameEl.style.height = doc.documentElement.scrollHeight + 'px';
+      } catch (e) { /* クロスオリジン等では無視 */ }
+    }
+    frameEl.addEventListener('load', () => {
+      syncFrameHeight();
+      try {
+        if (frameObserver) frameObserver.disconnect();
+        frameObserver = new ResizeObserver(syncFrameHeight);
+        frameObserver.observe(frameEl.contentWindow.document.body);
+      } catch (e) { /* ResizeObserver 非対応時は無視 */ }
+    });
+    window.addEventListener('resize', syncFrameHeight);
 
     // URL ハッシュで初期選択を復元(リロード・共有対応)
     select(location.hash.slice(1) || GENERATORS[0].id, false);
