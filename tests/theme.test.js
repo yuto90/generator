@@ -89,6 +89,8 @@ test('music player wires theme UI and both card palettes', async () => {
   assert.match(js, /\.\.\/theme\.js/);
   assert.match(js, /dark:\s*\{\s*bgColor:\s*'#1a1825'/);
   assert.match(js, /light:\s*\{\s*bgColor:\s*'#f1efff'/);
+  assert.doesNotMatch(html, /via\.placeholder\.com|icon="volume-low"/);
+  assert.doesNotMatch(js, /via\.placeholder\.com/);
 });
 
 test('apple music wires theme UI and both card palettes', async () => {

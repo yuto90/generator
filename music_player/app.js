@@ -7,7 +7,21 @@ import {
 } from '../theme.js';
 
 // ---- Constants ----
-const DEFAULT_COVER = 'https://via.placeholder.com/300/1a1825/5b4fe0?text=Cover+Art';
+const DEFAULT_COVER = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#29243d"/>
+      <stop offset="1" stop-color="#15131f"/>
+    </linearGradient>
+  </defs>
+  <rect width="300" height="300" fill="url(#g)"/>
+  <g fill="rgba(255,255,255,0.52)" transform="translate(150 150) scale(4.2) translate(-12 -12)">
+    <path d="M9 18V5l12-2v13" fill="none" stroke="rgba(255,255,255,0.52)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="6" cy="18" r="3"/>
+    <circle cx="18" cy="16" r="3"/>
+  </g>
+</svg>`);
 const THEME_COLORS = {
   dark: { bgColor: '#1a1825', pointColor: '#7c6af0', textColor: '#e2e2ea' },
   light: { bgColor: '#f1efff', pointColor: '#6756df', textColor: '#252332' },
