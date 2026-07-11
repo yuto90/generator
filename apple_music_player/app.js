@@ -1,3 +1,11 @@
+import {
+  readTheme,
+  writeTheme,
+  applyTheme,
+  isThemeMessage,
+  postTheme,
+} from '../theme.js';
+
 // ---- Constants ----
 // 外部プレースホルダーサービスに依存しないよう、デフォルトカバーはインライン SVG
 const DEFAULT_COVER = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
@@ -16,6 +24,10 @@ const DEFAULT_COVER = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
     <circle cx="18" cy="16" r="3"/>
   </g>
 </svg>`);
+const THEME_COLORS = {
+  dark: { bgColor: '#8e3b52', pointColor: '#ffffff', textColor: '#ffffff' },
+  light: { bgColor: '#f2b6c4', pointColor: '#a91636', textColor: '#32151d' },
+};
 
 // ---- State ----
 let player = null;
@@ -190,6 +202,37 @@ function applyPreview() {
     }
   }
 }
+
+// ---- Theme ----
+const themeToggle = document.querySelector('[data-theme-toggle]');
+let currentTheme;
+
+function setTheme(theme, persist = true, notifyParent = true) {
+  currentTheme = applyTheme(document.documentElement, themeToggle, theme);
+  const colors = THEME_COLORS[currentTheme];
+  document.getElementById('in-bg-color').value = colors.bgColor;
+  document.getElementById('in-point-color').value = colors.pointColor;
+  document.getElementById('in-text-color').value = colors.textColor;
+  applyPreview();
+
+  if (persist) writeTheme(window.localStorage, currentTheme);
+  if (notifyParent && window.parent !== window) {
+    postTheme(window.parent, location.origin, currentTheme);
+  }
+}
+
+currentTheme = applyTheme(document.documentElement, themeToggle, readTheme());
+setTheme(currentTheme, false, false);
+
+themeToggle.addEventListener('click', () => {
+  setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+});
+
+window.addEventListener('message', (event) => {
+  if (isThemeMessage(event, location.origin)) {
+    setTheme(event.data.theme, true, false);
+  }
+});
 
 // ---- プレイヤープレビュー更新 ----
 document.getElementById('btn-update').addEventListener('click', applyPreview);
