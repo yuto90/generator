@@ -120,12 +120,37 @@ document.getElementById('in-image').addEventListener('change', (event) => {
   reader.readAsDataURL(file);
 });
 
+// YouTube の各種 URL 形式(watch/youtu.be/embed/shorts)や ID 直接入力から動画 ID を取り出す
+function extractYouTubeId(input) {
+  const trimmed = (input || '').trim();
+  if (!trimmed) return '';
+  if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
+
+  try {
+    const url = new URL(trimmed);
+    if (/(^|\.)youtu\.be$/.test(url.hostname)) {
+      return url.pathname.split('/').filter(Boolean)[0] || '';
+    }
+    if (/(^|\.)youtube\.com$/.test(url.hostname)) {
+      const parts = url.pathname.split('/').filter(Boolean);
+      if (parts[0] === 'embed' || parts[0] === 'shorts' || parts[0] === 'live') {
+        return parts[1] || '';
+      }
+      return url.searchParams.get('v') || '';
+    }
+  } catch (e) {
+    // URL として解析できない入力への保険
+  }
+  const match = trimmed.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+  return match ? match[1] : '';
+}
+
 function getFormState() {
   return {
     title:      document.getElementById('in-title').value,
     artist:     document.getElementById('in-artist').value,
     copyright:  document.getElementById('in-copyright').value,
-    youtubeId:  document.getElementById('in-youtube').value.trim(),
+    youtubeId:  extractYouTubeId(document.getElementById('in-youtube').value),
     imageSrc:   uploadedImageSrc === DEFAULT_COVER ? null : uploadedImageSrc,
     bgColor:    document.getElementById('in-bg-color').value,
     pointColor: document.getElementById('in-point-color').value,
