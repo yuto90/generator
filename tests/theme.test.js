@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 
 import {
   normalizeTheme,
@@ -65,4 +66,14 @@ test('postTheme sends a normalized message', () => {
     { type: 'generator-theme-change', theme: 'light' },
     'http://127.0.0.1:8000',
   ]]);
+});
+
+test('portal exposes an accessible toggle and imports shared theme logic', async () => {
+  const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+
+  assert.match(html, /data-theme-toggle/);
+  assert.match(html, /aria-pressed="false"/);
+  assert.match(html, /from '\.\/theme\.js'/);
+  assert.match(html, /isThemeMessage/);
+  assert.match(html, /postTheme/);
 });

@@ -4,15 +4,57 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>music player generators</title>
+  <script>
+    try {
+      document.documentElement.dataset.theme = localStorage.getItem('generator-theme') === 'light' ? 'light' : 'dark';
+    } catch {
+      document.documentElement.dataset.theme = 'dark';
+    }
+  </script>
   <style>
+    :root {
+      color-scheme: dark;
+      --page-bg: #0a0a0f;
+      --panel-bg: rgba(255,255,255,0.03);
+      --mobile-panel-bg: #12121a;
+      --text-main: #e2e2ea;
+      --text-strong: rgba(255,255,255,0.9);
+      --text-name: rgba(255,255,255,0.88);
+      --text-muted: rgba(255,255,255,0.33);
+      --text-subtle: rgba(255,255,255,0.2);
+      --border: rgba(255,255,255,0.08);
+      --border-active: rgba(255,255,255,0.12);
+      --hover: rgba(255,255,255,0.05);
+      --active: rgba(255,255,255,0.07);
+      --frame-bg: #0a0a0f;
+      --icon-shadow: rgba(0,0,0,0.35);
+    }
+    :root[data-theme="light"] {
+      color-scheme: light;
+      --page-bg: #f5f5fa;
+      --panel-bg: rgba(255,255,255,0.82);
+      --mobile-panel-bg: #ffffff;
+      --text-main: #24242d;
+      --text-strong: #17171d;
+      --text-name: #24242d;
+      --text-muted: rgba(36,36,45,0.58);
+      --text-subtle: rgba(36,36,45,0.42);
+      --border: rgba(25,25,35,0.12);
+      --border-active: rgba(40,35,80,0.2);
+      --hover: rgba(40,35,80,0.06);
+      --active: rgba(40,35,80,0.1);
+      --frame-bg: #f5f5fa;
+      --icon-shadow: rgba(30,25,50,0.18);
+    }
+
     * { box-sizing: border-box; }
 
     body {
       margin: 0;
-      background: #0a0a0f;
+      background: var(--page-bg);
       min-height: 100vh;
       font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
-      color: #e2e2ea;
+      color: var(--text-main);
       display: flex;
     }
 
@@ -26,8 +68,8 @@
       display: flex;
       flex-direction: column;
       padding: 24px 14px;
-      background: rgba(255,255,255,0.03);
-      border-right: 1px solid rgba(255,255,255,0.08);
+      background: var(--panel-bg);
+      border-right: 1px solid var(--border);
     }
     .sidebar-header {
       display: flex;
@@ -47,12 +89,12 @@
       font-weight: 700;
       letter-spacing: 0.12em;
       text-transform: uppercase;
-      color: rgba(255,255,255,0.9);
+      color: var(--text-strong);
       margin: 0;
     }
     .sidebar-sub {
       font-size: 11px;
-      color: rgba(255,255,255,0.3);
+      color: var(--text-muted);
       padding: 0 10px;
       margin: 0 0 20px;
     }
@@ -73,10 +115,10 @@
       cursor: pointer;
       transition: background 0.15s, border-color 0.15s;
     }
-    .gen-item:hover { background: rgba(255,255,255,0.05); }
+    .gen-item:hover { background: var(--hover); }
     .gen-item.active {
-      background: rgba(255,255,255,0.07);
-      border-color: rgba(255,255,255,0.12);
+      background: var(--active);
+      border-color: var(--border-active);
     }
 
     .gen-icon {
@@ -87,7 +129,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+      box-shadow: 0 4px 12px var(--icon-shadow);
     }
     .gen-icon svg { width: 18px; height: 18px; fill: #fff; }
 
@@ -95,14 +137,14 @@
     .gen-name {
       font-size: 13px;
       font-weight: 600;
-      color: rgba(255,255,255,0.88);
+      color: var(--text-name);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
     .gen-desc {
       font-size: 11px;
-      color: rgba(255,255,255,0.33);
+      color: var(--text-muted);
       margin-top: 1px;
       white-space: nowrap;
       overflow: hidden;
@@ -113,7 +155,29 @@
       margin-top: auto;
       padding: 0 10px;
       font-size: 10px;
-      color: rgba(255,255,255,0.2);
+      color: var(--text-subtle);
+    }
+    .sidebar-footer-label { display: block; margin-bottom: 10px; }
+    .theme-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 10px;
+      background: var(--hover);
+      color: var(--text-main);
+      font: inherit;
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .theme-toggle:hover { background: var(--active); }
+    .theme-icon { font-size: 14px; letter-spacing: 0.08em; }
+    .theme-toggle:focus-visible {
+      outline: 2px solid #7c6af0;
+      outline-offset: 2px;
     }
 
     /* ---- Main ---- */
@@ -127,7 +191,7 @@
       width: 100%;
       height: 100%;
       border: none;
-      background: #0a0a0f;
+      background: var(--frame-bg);
     }
 
     /* ---- Responsive ---- */
@@ -144,12 +208,14 @@
         gap: 8px;
         padding: 12px;
         overflow-x: auto;
-        background: #12121a;
+        background: var(--mobile-panel-bg);
         border-right: none;
-        border-bottom: 1px solid rgba(255,255,255,0.08);
+        border-bottom: 1px solid var(--border);
       }
-      .sidebar-header, .sidebar-sub, .sidebar-footer, .gen-desc { display: none; }
+      .sidebar-header, .sidebar-sub, .sidebar-footer-label, .gen-desc { display: none; }
       .gen-item { width: auto; margin-bottom: 0; flex-shrink: 0; }
+      .sidebar-footer { margin: 0 0 0 auto; padding: 0; flex-shrink: 0; }
+      .theme-toggle { width: auto; min-height: 44px; }
       /* iframe はモバイルで中身の高さに合わせる(JS が設定)ため auto */
       .main { height: auto; }
     }
@@ -165,7 +231,13 @@
     </div>
     <p class="sidebar-sub">作りたいプレーヤーを選択</p>
     <nav id="gen-list"></nav>
-    <div class="sidebar-footer">music player generators</div>
+    <div class="sidebar-footer">
+      <span class="sidebar-footer-label">music player generators</span>
+      <button type="button" class="theme-toggle" data-theme-toggle aria-pressed="false" aria-label="ライトモードに切り替える">
+        <span class="theme-icon" aria-hidden="true">☀︎ / ☾</span>
+        <span data-theme-label>ダーク</span>
+      </button>
+    </div>
   </aside>
 
   <!-- ---- Main: selected generator ---- -->
@@ -173,7 +245,9 @@
     <iframe id="gen-frame" title="generator preview"></iframe>
   </main>
 
-  <script>
+  <script type="module">
+    import { readTheme, writeTheme, applyTheme, isThemeMessage, postTheme } from './theme.js';
+
     const GENERATORS = [
       {
         id: 'music_player',
@@ -203,6 +277,20 @@
 
     const listEl = document.getElementById('gen-list');
     const frameEl = document.getElementById('gen-frame');
+    const themeToggle = document.querySelector('[data-theme-toggle]');
+    let currentTheme = applyTheme(document.documentElement, themeToggle, readTheme());
+
+    function setTheme(theme, persist = true, notifyFrame = true) {
+      currentTheme = applyTheme(document.documentElement, themeToggle, theme);
+      if (persist) writeTheme(window.localStorage, currentTheme);
+      if (notifyFrame && frameEl.contentWindow) {
+        postTheme(frameEl.contentWindow, location.origin, currentTheme);
+      }
+    }
+
+    themeToggle.addEventListener('click', () => {
+      setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+    });
 
     function select(id, updateHash = true) {
       const gen = GENERATORS.find(g => g.id === id) || GENERATORS[0];
@@ -242,6 +330,7 @@
     }
     frameEl.addEventListener('load', () => {
       syncFrameHeight();
+      postTheme(frameEl.contentWindow, location.origin, currentTheme);
       try {
         if (frameObserver) frameObserver.disconnect();
         frameObserver = new ResizeObserver(syncFrameHeight);
@@ -249,6 +338,11 @@
       } catch (e) { /* ResizeObserver 非対応時は無視 */ }
     });
     window.addEventListener('resize', syncFrameHeight);
+    window.addEventListener('message', (event) => {
+      if (isThemeMessage(event, location.origin)) {
+        setTheme(event.data.theme, true, false);
+      }
+    });
 
     // URL ハッシュで初期選択を復元(リロード・共有対応)
     select(location.hash.slice(1) || GENERATORS[0].id, false);
