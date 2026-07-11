@@ -77,3 +77,16 @@ test('portal exposes an accessible toggle and imports shared theme logic', async
   assert.match(html, /isThemeMessage/);
   assert.match(html, /postTheme/);
 });
+
+test('music player wires theme UI and both card palettes', async () => {
+  const [html, js] = await Promise.all([
+    readFile(new URL('../music_player/index.html', import.meta.url), 'utf8'),
+    readFile(new URL('../music_player/app.js', import.meta.url), 'utf8'),
+  ]);
+
+  assert.match(html, /data-theme-toggle/);
+  assert.match(html, /:root\[data-theme="light"\]/);
+  assert.match(js, /\.\.\/theme\.js/);
+  assert.match(js, /dark:\s*\{\s*bgColor:\s*'#1a1825'/);
+  assert.match(js, /light:\s*\{\s*bgColor:\s*'#f1efff'/);
+});

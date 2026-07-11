@@ -1,5 +1,17 @@
+import {
+  readTheme,
+  writeTheme,
+  applyTheme,
+  isThemeMessage,
+  postTheme,
+} from '../theme.js';
+
 // ---- Constants ----
 const DEFAULT_COVER = 'https://via.placeholder.com/300/1a1825/5b4fe0?text=Cover+Art';
+const THEME_COLORS = {
+  dark: { bgColor: '#1a1825', pointColor: '#7c6af0', textColor: '#e2e2ea' },
+  light: { bgColor: '#f1efff', pointColor: '#6756df', textColor: '#252332' },
+};
 
 // ---- State ----
 let player = null;
@@ -139,6 +151,37 @@ function applyPreview() {
     }
   }
 }
+
+// ---- Theme ----
+const themeToggle = document.querySelector('[data-theme-toggle]');
+let currentTheme;
+
+function setTheme(theme, persist = true, notifyParent = true) {
+  currentTheme = applyTheme(document.documentElement, themeToggle, theme);
+  const colors = THEME_COLORS[currentTheme];
+  document.getElementById('in-bg-color').value = colors.bgColor;
+  document.getElementById('in-point-color').value = colors.pointColor;
+  document.getElementById('in-text-color').value = colors.textColor;
+  applyPreview();
+
+  if (persist) writeTheme(window.localStorage, currentTheme);
+  if (notifyParent && window.parent !== window) {
+    postTheme(window.parent, location.origin, currentTheme);
+  }
+}
+
+currentTheme = applyTheme(document.documentElement, themeToggle, readTheme());
+setTheme(currentTheme, false, false);
+
+themeToggle.addEventListener('click', () => {
+  setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+});
+
+window.addEventListener('message', (event) => {
+  if (isThemeMessage(event, location.origin)) {
+    setTheme(event.data.theme, true, false);
+  }
+});
 
 // ---- プレイヤープレビュー更新 ----
 document.getElementById('btn-update').addEventListener('click', applyPreview);
