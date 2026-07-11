@@ -313,88 +313,6 @@
       padding-bottom: 12px;
     }
 
-    /* ---- Playlist ---- */
-    .playlist-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 8px 10px;
-      border-radius: 10px;
-      border: 1px solid transparent;
-      cursor: pointer;
-      transition: background 0.15s, border-color 0.15s;
-    }
-    .playlist-item:hover { background: rgba(255,255,255,0.05); }
-    .playlist-item.active {
-      background: rgba(255,0,0,0.1);
-      border-color: rgba(255,0,0,0.25);
-    }
-    .playlist-cover {
-      width: 40px;
-      height: 40px;
-      border-radius: 4px;
-      flex-shrink: 0;
-      background: rgba(255,0,0,0.15);
-      background-size: cover;
-      background-position: center;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .playlist-info { flex: 1; min-width: 0; }
-    .playlist-title {
-      font-size: 12px;
-      font-weight: 600;
-      color: rgba(255,255,255,0.85);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .playlist-artist {
-      font-size: 11px;
-      color: rgba(255,255,255,0.35);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      margin-top: 2px;
-    }
-    .playlist-delete {
-      flex-shrink: 0;
-      width: 24px;
-      height: 24px;
-      border-radius: 6px;
-      border: none;
-      background: transparent;
-      color: rgba(255,255,255,0.2);
-      font-size: 16px;
-      line-height: 1;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      opacity: 0;
-      transition: opacity 0.15s, background 0.15s, color 0.15s;
-    }
-    .playlist-item:hover .playlist-delete { opacity: 1; }
-    .playlist-delete:hover { background: rgba(255,80,80,0.15); color: #ff7070; }
-    .playlist-delete:disabled { opacity: 0 !important; pointer-events: none; }
-    .btn-add-song {
-      padding: 4px 10px;
-      border-radius: 8px;
-      border: 1px solid rgba(255,0,0,0.3);
-      background: rgba(255,0,0,0.1);
-      color: #ff8a8a;
-      font-size: 11px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.15s, border-color 0.15s;
-      letter-spacing: 0.02em;
-    }
-    .btn-add-song:hover {
-      background: rgba(255,0,0,0.2);
-      border-color: rgba(255,0,0,0.5);
-    }
-
     /* ---- Responsive ---- */
     @media (max-width: 768px) {
       .maker-layout { flex-direction: column; gap: 16px; padding: 16px; }
@@ -407,22 +325,7 @@
 <div id="youtube-audio" class="pointer-events-none fixed -left-0.5 -top-0.5 h-px w-px overflow-hidden"></div>
 
 <!-- ===== Layout ===== -->
-<div class="maker-layout relative flex min-h-screen w-full max-w-[1500px] mx-auto items-center justify-center px-[340px] max-md:flex-col max-md:px-4 max-md:py-6 max-md:gap-4">
-
-  <!-- ---- Left panel (playlist) ---- -->
-  <aside class="glass-panel side-panel absolute inset-y-0 left-0 flex flex-col w-[320px] p-6 overflow-y-auto max-md:static max-md:w-full max-md:max-w-sm">
-    <div class="mb-4">
-      <div class="flex items-center justify-between mb-1">
-        <div class="flex items-center gap-2">
-          <div class="w-1.5 h-1.5 rounded-full bg-[#ff0000]"></div>
-          <h2 class="text-sm font-semibold text-white/90 tracking-wide uppercase">Playlist</h2>
-        </div>
-        <button class="btn-add-song" id="btn-add-song" type="button">＋ 追加</button>
-      </div>
-      <p class="text-xs text-white/30 mt-1">曲を選んで右パネルで編集</p>
-    </div>
-    <div id="playlist-list" class="flex flex-col gap-1.5"></div>
-  </aside>
+<div class="maker-layout relative flex min-h-screen w-full max-w-[1500px] mx-auto items-center justify-center pr-[340px] max-md:flex-col max-md:px-4 max-md:py-6 max-md:gap-4">
 
   <!-- ---- Center: YouTube Music player preview ---- -->
   <div id="capture-area" class="flex w-full justify-center max-md:w-auto">

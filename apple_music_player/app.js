@@ -16,16 +16,6 @@ const DEFAULT_COVER = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
     <circle cx="18" cy="16" r="3"/>
   </g>
 </svg>`);
-const DEFAULT_SONG = {
-  title: '',
-  artist: '',
-  copyright: '',
-  youtubeId: '',
-  imageSrc: null,
-  bgColor: '#8e3b52',
-  pointColor: '#ffffff',
-  textColor: '#ffffff',
-};
 
 // ---- State ----
 let player = null;
@@ -34,9 +24,6 @@ let isPlayerReady = false;
 let pendingVideoId = null;
 let isPlaying = false;
 let uploadedImageSrc = DEFAULT_COVER;
-
-let playlist = [{ id: Date.now(), ...DEFAULT_SONG }];
-let activeIndex = 0;
 
 // ---- Color helpers ----
 // Apple Music の Now Playing はアートワーク由来のグラデーション背景。
@@ -133,12 +120,6 @@ document.getElementById('in-image').addEventListener('change', (event) => {
   reader.readAsDataURL(file);
 });
 
-// ---- Playlist helpers ----
-function escapeHtml(str) {
-  if (!str) return '';
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
 function getFormState() {
   return {
     title:      document.getElementById('in-title').value,
@@ -152,24 +133,8 @@ function getFormState() {
   };
 }
 
-function saveCurrentToPlaylist() {
-  Object.assign(playlist[activeIndex], getFormState());
-}
-
-function loadSongToForm(song) {
-  document.getElementById('in-title').value       = song.title;
-  document.getElementById('in-artist').value      = song.artist;
-  document.getElementById('in-copyright').value   = song.copyright;
-  document.getElementById('in-youtube').value     = song.youtubeId;
-  document.getElementById('in-bg-color').value    = song.bgColor;
-  document.getElementById('in-point-color').value = song.pointColor;
-  document.getElementById('in-text-color').value  = song.textColor;
-  document.getElementById('in-image').value = '';
-  uploadedImageSrc = song.imageSrc || DEFAULT_COVER;
-}
-
 function applyPreview() {
-  const song = playlist[activeIndex];
+  const song = getFormState();
   const title     = song.title     || '曲のタイトル';
   const artist    = song.artist    || 'アーティスト名';
   const copyright = song.copyright || 'ⓒ 出典';
@@ -202,84 +167,8 @@ function applyPreview() {
   }
 }
 
-function renderPlaylist() {
-  const list = document.getElementById('playlist-list');
-  list.innerHTML = '';
-
-  const musicIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
-
-  playlist.forEach((song, i) => {
-    const item = document.createElement('div');
-    item.className = 'playlist-item' + (i === activeIndex ? ' active' : '');
-
-    const coverStyle = song.imageSrc
-      ? `background-image: url('${song.imageSrc}');`
-      : '';
-
-    item.innerHTML = `
-      <div class="playlist-cover" style="${coverStyle}">
-        ${song.imageSrc ? '' : musicIcon}
-      </div>
-      <div class="playlist-info">
-        <div class="playlist-title">${escapeHtml(song.title) || '（タイトル未設定）'}</div>
-        <div class="playlist-artist">${escapeHtml(song.artist) || '（アーティスト未設定）'}</div>
-      </div>
-      <button class="playlist-delete" type="button" ${playlist.length === 1 ? 'disabled' : ''} aria-label="削除">×</button>
-    `;
-
-    item.addEventListener('click', (e) => {
-      if (e.target.classList.contains('playlist-delete')) return;
-      if (i !== activeIndex) selectSong(i);
-    });
-
-    item.querySelector('.playlist-delete').addEventListener('click', (e) => {
-      e.stopPropagation();
-      deleteSong(i);
-    });
-
-    list.appendChild(item);
-  });
-}
-
-function selectSong(index) {
-  saveCurrentToPlaylist();
-  activeIndex = index;
-  loadSongToForm(playlist[activeIndex]);
-  applyPreview();
-  renderPlaylist();
-}
-
-function addSong() {
-  saveCurrentToPlaylist();
-  playlist.push({ id: Date.now(), ...DEFAULT_SONG });
-  activeIndex = playlist.length - 1;
-  loadSongToForm(playlist[activeIndex]);
-  applyPreview();
-  renderPlaylist();
-}
-
-function deleteSong(index) {
-  if (playlist.length === 1) return;
-  playlist.splice(index, 1);
-  if (activeIndex >= playlist.length) {
-    activeIndex = playlist.length - 1;
-  } else if (activeIndex > index) {
-    activeIndex--;
-  }
-  loadSongToForm(playlist[activeIndex]);
-  applyPreview();
-  renderPlaylist();
-}
-
 // ---- プレイヤープレビュー更新 ----
-document.getElementById('btn-update').addEventListener('click', () => {
-  saveCurrentToPlaylist();
-  applyPreview();
-  renderPlaylist();
-});
-
-// ---- ＋ 追加ボタン ----
-document.getElementById('btn-add-song').addEventListener('click', addSong);
+document.getElementById('btn-update').addEventListener('click', applyPreview);
 
 // ---- 画像キャプチャ ----
 document.getElementById('btn-capture').addEventListener('click', () => {
@@ -330,4 +219,3 @@ document.getElementById('volume-slider').addEventListener('input', (e) => {
 
 // ---- 初期化 ----
 applyPreview();
-renderPlaylist();
