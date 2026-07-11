@@ -4,15 +4,28 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>youtube music generator</title>
+  <script>
+    try {
+      document.documentElement.dataset.theme = localStorage.getItem('generator-theme') === 'light' ? 'light' : 'dark';
+    } catch {
+      document.documentElement.dataset.theme = 'dark';
+    }
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
 
     :root {
+      color-scheme: dark;
       --glass-bg: rgba(255,255,255,0.04);
       --glass-border: rgba(255,255,255,0.08);
       --accent: #ff0000;
+    }
+    :root[data-theme="light"] {
+      color-scheme: light;
+      --glass-bg: rgba(255,255,255,0.76);
+      --glass-border: rgba(55,20,20,0.13);
     }
 
     * { box-sizing: border-box; }
@@ -26,6 +39,13 @@
       min-height: 100vh;
       font-family: 'Roboto', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
       color: #eae6e6;
+    }
+    :root[data-theme="light"] body {
+      background: #faf5f5;
+      background-image:
+        radial-gradient(ellipse 80% 50% at 20% -10%, rgba(255,0,0,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 110%, rgba(120,40,40,0.07) 0%, transparent 60%);
+      color: #292424;
     }
 
     /* ---- Scrollbar ---- */
@@ -148,6 +168,35 @@
       border: none;
       border-top: 1px solid rgba(255,255,255,0.06);
       margin: 16px 0;
+    }
+
+    .panel-title { color: rgba(255,255,255,0.9); }
+    .help-text { color: rgba(255,255,255,0.25); }
+    .theme-toggle {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      min-height: 36px; padding: 7px 9px; border: 1px solid var(--glass-border);
+      border-radius: 9px; background: rgba(255,255,255,0.07); color: inherit;
+      font-size: 11px; cursor: pointer;
+    }
+    .theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    :root[data-theme="light"] ::-webkit-scrollbar-thumb { background: rgba(41,36,36,0.2); }
+    :root[data-theme="light"] .field-input,
+    :root[data-theme="light"] .file-input {
+      background: rgba(255,255,255,0.82); border-color: rgba(55,20,20,0.13); color: #292424;
+    }
+    :root[data-theme="light"] .field-input::placeholder { color: rgba(41,36,36,0.38); }
+    :root[data-theme="light"] .file-input { color: rgba(41,36,36,0.62); }
+    :root[data-theme="light"] .field-label,
+    :root[data-theme="light"] .help-text { color: rgba(41,36,36,0.55); }
+    :root[data-theme="light"] .panel-title { color: #292424; }
+    :root[data-theme="light"] .divider { border-color: rgba(55,20,20,0.1); }
+    :root[data-theme="light"] .theme-toggle { background: rgba(55,20,20,0.06); }
+    :root[data-theme="light"] .btn-save {
+      background: rgba(255,255,255,0.7); border-color: rgba(55,20,20,0.13); color: rgba(41,36,36,0.75);
+    }
+    :root[data-theme="light"] .btn-save:hover { background: #fff; color: #292424; }
+    :root[data-theme="light"] .color-picker-wrap input[type="color"] {
+      background: rgba(255,255,255,0.82); border-color: rgba(55,20,20,0.13);
     }
 
     /* =====================================================
@@ -426,11 +475,14 @@
 
   <!-- ---- Right panel (controls) ---- -->
   <div class="glass-panel side-panel input-section absolute inset-y-0 right-0 flex flex-col w-[320px] p-6 overflow-y-auto max-md:static max-md:w-full max-md:max-w-sm">
-    <div class="mb-6">
-      <div class="flex items-center gap-2 mb-1">
+    <div class="mb-6 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-2">
         <div class="w-1.5 h-1.5 rounded-full bg-[#ff0000]"></div>
-        <h2 class="text-sm font-semibold text-white/90 tracking-wide uppercase">YouTube Music</h2>
+        <h2 class="panel-title text-sm font-semibold tracking-wide uppercase">YouTube Music</h2>
       </div>
+      <button type="button" class="theme-toggle" data-theme-toggle aria-pressed="false" aria-label="ライトモードに切り替える">
+        <span aria-hidden="true">☀︎ / ☾</span><span data-theme-label>ダーク</span>
+      </button>
     </div>
 
     <div class="flex flex-col gap-4">
@@ -449,7 +501,7 @@
       <div>
         <label class="field-label">YouTube URL</label>
         <input class="field-input" type="text" id="in-youtube" placeholder="例: https://www.youtube.com/watch?v=w2-uvGZCe3g">
-        <p class="text-[11px] text-white/25 mt-1.5">動画の URL を貼り付けてください</p>
+        <p class="help-text text-[11px] mt-1.5">動画の URL を貼り付けてください</p>
       </div>
       <div>
         <label class="field-label">Copyright</label>

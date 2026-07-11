@@ -103,3 +103,16 @@ test('apple music wires theme UI and both card palettes', async () => {
   assert.match(js, /dark:\s*\{\s*bgColor:\s*'#8e3b52'/);
   assert.match(js, /light:\s*\{\s*bgColor:\s*'#f2b6c4'/);
 });
+
+test('youtube music wires theme UI and both card palettes', async () => {
+  const [html, js] = await Promise.all([
+    readFile(new URL('../youtube_music_player/index.html', import.meta.url), 'utf8'),
+    readFile(new URL('../youtube_music_player/app.js', import.meta.url), 'utf8'),
+  ]);
+
+  assert.match(html, /data-theme-toggle/);
+  assert.match(html, /:root\[data-theme="light"\]/);
+  assert.match(js, /\.\.\/theme\.js/);
+  assert.match(js, /dark:\s*\{\s*bgColor:\s*'#030303'/);
+  assert.match(js, /light:\s*\{\s*bgColor:\s*'#f4f4f4'/);
+});
