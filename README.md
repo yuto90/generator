@@ -15,6 +15,7 @@ python3 -m http.server 8000
 起動後、ブラウザで各アプリにアクセスします。
 
 - music_player: http://127.0.0.1:8000/music_player/
+- apple_music_player: http://127.0.0.1:8000/apple_music_player/
 
 今後アプリが増えた場合も、同じサーバーで次のように開けます。
 
