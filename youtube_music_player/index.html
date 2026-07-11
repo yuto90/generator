@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>youtube music generator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+
+    :root {
+      --glass-bg: rgba(255,255,255,0.04);
+      --glass-border: rgba(255,255,255,0.08);
+      --accent: #ff0000;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: #0b0808;
+      background-image:
+        radial-gradient(ellipse 80% 50% at 20% -10%, rgba(255,0,0,0.10) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 110%, rgba(255,255,255,0.05) 0%, transparent 60%);
+      min-height: 100vh;
+      font-family: 'Roboto', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+      color: #eae6e6;
+    }
+
+    /* ---- Scrollbar ---- */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
+
+    /* ---- Glass panel ---- */
+    .glass-panel {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+
+    /* ---- Input fields ---- */
+    .field-input {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 13px;
+      color: #eae6e6;
+      outline: none;
+      transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+    }
+    .field-input::placeholder { color: rgba(255,255,255,0.25); }
+    .field-input:focus {
+      border-color: rgba(255,0,0,0.6);
+      background: rgba(255,0,0,0.06);
+      box-shadow: 0 0 0 3px rgba(255,0,0,0.12);
+    }
+
+    /* ---- File input ---- */
+    .file-input {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 8px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.5);
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .file-input::file-selector-button {
+      background: rgba(255,0,0,0.2);
+      border: 1px solid rgba(255,0,0,0.3);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #ff8a8a;
+      cursor: pointer;
+      margin-right: 10px;
+      transition: background 0.2s;
+    }
+    .file-input::file-selector-button:hover {
+      background: rgba(255,0,0,0.35);
+    }
+
+    /* ---- Buttons ---- */
+    .btn-primary {
+      width: 100%;
+      padding: 11px;
+      border: none;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.02em;
+    }
+    .btn-apply {
+      background: linear-gradient(135deg, #ff1a1a, #cc0000);
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(255,0,0,0.3);
+    }
+    .btn-apply:hover {
+      background: linear-gradient(135deg, #ff3b3b, #e00000);
+      box-shadow: 0 6px 20px rgba(255,0,0,0.4);
+      transform: translateY(-1px);
+    }
+    .btn-save {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.7);
+    }
+    .btn-save:hover {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+
+    /* ---- Color picker ---- */
+    .color-picker-wrap input[type="color"] {
+      width: 100%;
+      height: 36px;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.04);
+      padding: 3px;
+      cursor: pointer;
+    }
+
+    /* ---- Label ---- */
+    .field-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.35);
+      margin-bottom: 6px;
+    }
+
+    /* ---- Divider ---- */
+    .divider {
+      border: none;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      margin: 16px 0;
+    }
+
+    /* =====================================================
+       YouTube Music player card
+       ===================================================== */
+    .ym-card {
+      width: 340px;
+      border-radius: 34px;
+      padding: 18px 24px 0;
+      position: relative;
+      overflow: hidden;
+      color: var(--player-text, #ffffff);
+      box-shadow:
+        0 24px 64px rgba(0,0,0,0.6),
+        0 1px 0 rgba(255,255,255,0.08) inset;
+    }
+
+    /* top bar */
+    .ym-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      opacity: 0.85;
+      margin-bottom: 16px;
+    }
+    .ym-topbar .ctrl-btn { width: 22px; height: 22px; }
+
+    /* artwork: YT Music は角丸控えめのフラットな正方形 */
+    .ym-artwork {
+      aspect-ratio: 1 / 1;
+      width: 100%;
+      border-radius: 8px;
+      background-size: cover;
+      background-position: center;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      margin-bottom: 20px;
+    }
+
+    /* song info */
+    .ym-title {
+      font-size: 19px;
+      font-weight: 700;
+      line-height: 1.3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ym-artist {
+      font-size: 14px;
+      font-weight: 400;
+      opacity: 0.55;
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ---- Progress / Volume slider ---- */
+    .slider-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      height: 20px;
+      width: 100%;
+    }
+    .slider-track {
+      position: absolute;
+      height: 2px;
+      width: 100%;
+      border-radius: 1px;
+      background: currentColor;
+      opacity: 0.25;
+    }
+    .slider-fill {
+      position: absolute;
+      height: 2px;
+      border-radius: 1px;
+      background: var(--player-point, #ff0000);
+      transition: width 0.1s linear;
+    }
+    .slider-thumb {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--player-point, #ff0000);
+      box-shadow: 0 0 6px rgba(0,0,0,0.5);
+      transform: translateX(-50%);
+      pointer-events: none;
+      transition: left 0.1s linear;
+    }
+    .slider-input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      z-index: 5;
+      margin: 0;
+      height: 100%;
+      width: 100%;
+    }
+
+    .ym-times {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      opacity: 0.5;
+      margin-top: 0;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ---- Control buttons ---- */
+    .ctrl-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      padding: 0;
+      color: inherit;
+      transition: opacity 0.15s, transform 0.15s;
+    }
+    .ctrl-btn:hover { opacity: 0.7; transform: scale(1.08); }
+    .ctrl-btn:active { transform: scale(0.95); }
+    .ctrl-btn svg { width: 100%; height: 100%; fill: currentColor; }
+
+    /* play: 白い円 + 黒いアイコン(YT Music の特徴) */
+    .ym-play-btn {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: #ffffff;
+      color: #030303 !important;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+    .ym-play-btn:hover { opacity: 1 !important; transform: scale(1.05) !important; }
+    .ym-play-btn svg { width: 30px; height: 30px; }
+
+    .ym-sub-btn { opacity: 0.85; }
+
+    /* bottom tabs */
+    .ym-tabs {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      border-top: 1px solid rgba(255,255,255,0.12);
+      margin: 22px -24px 0;
+      padding: 14px 0;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      opacity: 0.7;
+    }
+    .ym-tabs span { cursor: pointer; }
+    .ym-tabs span:hover { opacity: 0.7; }
+
+    .ym-copyright {
+      text-align: center;
+      font-size: 9px;
+      opacity: 0.35;
+      letter-spacing: 0.03em;
+      padding-bottom: 12px;
+    }
+
+    /* ---- Playlist ---- */
+    .playlist-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .playlist-item:hover { background: rgba(255,255,255,0.05); }
+    .playlist-item.active {
+      background: rgba(255,0,0,0.1);
+      border-color: rgba(255,0,0,0.25);
+    }
+    .playlist-cover {
+      width: 40px;
+      height: 40px;
+      border-radius: 4px;
+      flex-shrink: 0;
+      background: rgba(255,0,0,0.15);
+      background-size: cover;
+      background-position: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .playlist-info { flex: 1; min-width: 0; }
+    .playlist-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.85);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .playlist-artist {
+      font-size: 11px;
+      color: rgba(255,255,255,0.35);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px;
+    }
+    .playlist-delete {
+      flex-shrink: 0;
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: rgba(255,255,255,0.2);
+      font-size: 16px;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.15s, background 0.15s, color 0.15s;
+    }
+    .playlist-item:hover .playlist-delete { opacity: 1; }
+    .playlist-delete:hover { background: rgba(255,80,80,0.15); color: #ff7070; }
+    .playlist-delete:disabled { opacity: 0 !important; pointer-events: none; }
+    .btn-add-song {
+      padding: 4px 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,0,0,0.3);
+      background: rgba(255,0,0,0.1);
+      color: #ff8a8a;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      letter-spacing: 0.02em;
+    }
+    .btn-add-song:hover {
+      background: rgba(255,0,0,0.2);
+      border-color: rgba(255,0,0,0.5);
+    }
+
+    /* ---- Responsive ---- */
+    @media (max-width: 768px) {
+      .maker-layout { flex-direction: column; gap: 16px; padding: 16px; }
+      .side-panel { position: static !important; width: 100% !important; max-width: 340px; border-radius: 16px; border: 1px solid var(--glass-border); }
+    }
+  </style>
+</head>
+<body>
+
+<div id="youtube-audio" class="pointer-events-none fixed -left-0.5 -top-0.5 h-px w-px overflow-hidden"></div>
+
+<!-- ===== Layout ===== -->
+<div class="maker-layout relative flex min-h-screen w-full max-w-[1500px] mx-auto items-center justify-center px-[340px] max-md:flex-col max-md:px-4 max-md:py-6 max-md:gap-4">
+
+  <!-- ---- Left panel (playlist) ---- -->
+  <aside class="glass-panel side-panel absolute inset-y-0 left-0 flex flex-col w-[320px] p-6 overflow-y-auto max-md:static max-md:w-full max-md:max-w-sm">
+    <div class="mb-4">
+      <div class="flex items-center justify-between mb-1">
+        <div class="flex items-center gap-2">
+          <div class="w-1.5 h-1.5 rounded-full bg-[#ff0000]"></div>
+          <h2 class="text-sm font-semibold text-white/90 tracking-wide uppercase">Playlist</h2>
+        </div>
+        <button class="btn-add-song" id="btn-add-song" type="button">＋ 追加</button>
+      </div>
+      <p class="text-xs text-white/30 mt-1">曲を選んで右パネルで編集</p>
+    </div>
+    <div id="playlist-list" class="flex flex-col gap-1.5"></div>
+  </aside>
+
+  <!-- ---- Center: YouTube Music player preview ---- -->
+  <div id="capture-area" class="flex w-full justify-center max-md:w-auto">
+    <div class="ym-card" id="player-card">
+
+      <!-- Top bar -->
+      <div class="ym-topbar">
+        <button class="ctrl-btn" type="button" aria-label="閉じる">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M5 9l7 7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <span class="text-[11px] font-medium tracking-[0.12em] uppercase opacity-60">再生中</span>
+        <button class="ctrl-btn" type="button" aria-label="その他">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>
+        </button>
+      </div>
+
+      <!-- Cover art -->
+      <div id="cover-img" class="ym-artwork"></div>
+
+      <!-- Song info -->
+      <div class="flex items-center gap-3 mb-4">
+        <div class="flex-1 min-w-0">
+          <div class="ym-title" id="song-title">曲のタイトル</div>
+          <div class="ym-artist" id="song-artist">アーティスト名</div>
+        </div>
+        <button class="ctrl-btn ym-sub-btn w-5 h-5 shrink-0" type="button" aria-label="低評価">
+          <svg viewBox="0 0 24 24"><path d="M15 3H6.5A2.5 2.5 0 0 0 4 5.5l-1.4 7A2.5 2.5 0 0 0 5.05 15H10l-.7 4.2A1.8 1.8 0 0 0 11.08 21c.5 0 .96-.26 1.22-.68L16 14.5V3h-1z"/><path d="M18 3h3v11h-3z"/></svg>
+        </button>
+        <button class="ctrl-btn ym-sub-btn w-5 h-5 shrink-0" type="button" aria-label="高評価">
+          <svg viewBox="0 0 24 24"><path d="M9 21h8.5a2.5 2.5 0 0 0 2.5-2.5l1.4-7A2.5 2.5 0 0 0 18.95 9H14l.7-4.2A1.8 1.8 0 0 0 12.92 3c-.5 0-.96.26-1.22.68L8 9.5V21h1z"/><path d="M3 10h3v11H3z"/></svg>
+        </button>
+      </div>
+
+      <!-- Progress slider -->
+      <div class="slider-wrap" id="progress-wrap">
+        <div class="slider-track"></div>
+        <div class="slider-fill" id="progress-fill" style="width:0%"></div>
+        <div class="slider-thumb" id="progress-thumb" style="left:0%"></div>
+        <input class="slider-input" type="range" id="progress-slider" value="0" min="0" max="100">
+      </div>
+      <div class="ym-times">
+        <span id="time-current">0:00</span><span id="time-total">-:--</span>
+      </div>
+
+      <!-- Controls -->
+      <div class="flex items-center justify-between mt-3 px-1">
+        <button class="ctrl-btn ym-sub-btn w-5 h-5" type="button" aria-label="シャッフル">
+          <svg viewBox="0 0 24 24"><path d="M17 4l3.3 3.3-3.3 3.3v-2.3h-1.9c-.9 0-1.7.4-2.2 1.1l-1.2 1.6-1.5-2 1.1-1.5A4.75 4.75 0 0 1 15.1 6H17V4zM3 6h3.9c1.5 0 2.9.7 3.8 1.9l4.2 5.6c.5.7 1.3 1.1 2.2 1.1H19v-2.3l3.3 3.3L19 18.9v-2.3h-1.9c-1.5 0-2.9-.7-3.8-1.9L9.1 9.1C8.6 8.4 7.8 8 6.9 8H3V6zm6 8.6l1.5 2-.4.5c-.9 1.2-2.3 1.9-3.8 1.9H3v-2h3.3c.9 0 1.7-.4 2.2-1.1l.5-.7z"/></svg>
+        </button>
+        <button class="ctrl-btn w-8 h-8" type="button" aria-label="前へ">
+          <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zM18.5 6.6v10.8c0 .5-.56.8-.98.52l-8.1-5.4a.62.62 0 0 1 0-1.04l8.1-5.4c.42-.28.98.02.98.52z"/></svg>
+        </button>
+        <button class="ctrl-btn ym-play-btn" type="button" id="btn-play" aria-label="再生と一時停止">
+          <span class="flex items-center justify-center h-full w-full" id="icon-play">
+            <svg viewBox="0 0 24 24"><path d="M8 5.8v12.4c0 .62.68.99 1.2.66l9.6-6.2a.78.78 0 0 0 0-1.32L9.2 5.14A.78.78 0 0 0 8 5.8z"/></svg>
+          </span>
+          <span class="hidden items-center justify-center h-full w-full" id="icon-pause">
+            <svg viewBox="0 0 24 24"><rect x="6" y="4.5" width="4.4" height="15" rx="0.8"/><rect x="13.6" y="4.5" width="4.4" height="15" rx="0.8"/></svg>
+          </span>
+        </button>
+        <button class="ctrl-btn w-8 h-8" type="button" aria-label="次へ">
+          <svg viewBox="0 0 24 24"><path d="M16 6h2v12h-2zM5.5 6.6v10.8c0 .5.56.8.98.52l8.1-5.4a.62.62 0 0 0 0-1.04l-8.1-5.4c-.42-.28-.98.02-.98.52z"/></svg>
+        </button>
+        <button class="ctrl-btn ym-sub-btn w-5 h-5" type="button" aria-label="リピート">
+          <svg viewBox="0 0 24 24"><path d="M7 7h10v2.3l3.3-3.3L17 2.7V5H7a4 4 0 0 0-4 4v3h2V9a2 2 0 0 1 2-2zm10 10H7v-2.3L3.7 18 7 21.3V19h10a4 4 0 0 0 4-4v-3h-2v3a2 2 0 0 1-2 2z"/></svg>
+        </button>
+      </div>
+
+      <!-- Volume -->
+      <div class="flex items-center gap-2.5 mt-4">
+        <span class="ctrl-btn w-4 h-4 shrink-0 opacity-60">
+          <svg viewBox="0 0 24 24"><path d="M13 4.6v14.8c0 .7-.83 1.07-1.35.6L7.2 16H4.5A1.5 1.5 0 0 1 3 14.5v-5A1.5 1.5 0 0 1 4.5 8h2.7l4.45-4c.52-.47 1.35-.1 1.35.6z"/></svg>
+        </span>
+        <div class="slider-wrap flex-1">
+          <div class="slider-track"></div>
+          <div class="slider-fill" id="volume-fill" style="width:50%"></div>
+          <div class="slider-thumb" id="volume-thumb" style="left:50%"></div>
+          <input class="slider-input" type="range" id="volume-slider" value="50" min="0" max="100">
+        </div>
+        <span class="ctrl-btn w-4 h-4 shrink-0 opacity-60">
+          <svg viewBox="0 0 24 24"><path d="M10 4.6v14.8c0 .7-.83 1.07-1.35.6L4.2 16H1.5A1.5 1.5 0 0 1 0 14.5v-5A1.5 1.5 0 0 1 1.5 8h2.7l4.45-4c.52-.47 1.35-.1 1.35.6z"/><path d="M14.5 8.2a.9.9 0 0 1 1.27.1 5.6 5.6 0 0 1 0 7.4.9.9 0 0 1-1.36-1.18 3.8 3.8 0 0 0 0-5.04.9.9 0 0 1 .09-1.28z"/><path d="M17.8 5.3a.9.9 0 0 1 1.27.08 10 10 0 0 1 0 13.24.9.9 0 0 1-1.35-1.19 8.2 8.2 0 0 0 0-10.86.9.9 0 0 1 .08-1.27z"/></svg>
+        </span>
+      </div>
+
+      <!-- Bottom tabs -->
+      <div class="ym-tabs">
+        <span>次の曲</span>
+        <span>歌詞</span>
+        <span>関連</span>
+      </div>
+
+      <!-- Copyright -->
+      <div class="ym-copyright" id="copyright-text">ⓒ 出典</div>
+
+    </div>
+  </div>
+
+  <!-- ---- Right panel (controls) ---- -->
+  <div class="glass-panel side-panel input-section absolute inset-y-0 right-0 flex flex-col w-[320px] p-6 overflow-y-auto max-md:static max-md:w-full max-md:max-w-sm">
+    <div class="mb-6">
+      <div class="flex items-center gap-2 mb-1">
+        <div class="w-1.5 h-1.5 rounded-full bg-[#ff0000]"></div>
+        <h2 class="text-sm font-semibold text-white/90 tracking-wide uppercase">YouTube Music</h2>
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-4">
+      <div>
+        <label class="field-label">Title</label>
+        <input class="field-input" type="text" id="in-title" placeholder="タイトルまたはキャッチフレーズ">
+      </div>
+      <div>
+        <label class="field-label">Artist</label>
+        <input class="field-input" type="text" id="in-artist" placeholder="アーティスト名">
+      </div>
+      <div>
+        <label class="field-label">Cover Image</label>
+        <input class="file-input" type="file" id="in-image" accept="image/*">
+      </div>
+      <div>
+        <label class="field-label">YouTube ID</label>
+        <input class="field-input" type="text" id="in-youtube" placeholder="例: w2-uvGZCe3g">
+        <p class="text-[11px] text-white/25 mt-1.5">URL の v= 以降の文字列</p>
+      </div>
+      <div>
+        <label class="field-label">Copyright</label>
+        <input class="field-input" type="text" id="in-copyright" placeholder="ⓒ 依頼主">
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- Color pickers -->
+    <div class="flex gap-3">
+      <div class="flex-1">
+        <label class="field-label">BG</label>
+        <div class="color-picker-wrap">
+          <input type="color" id="in-bg-color" value="#030303">
+        </div>
+      </div>
+      <div class="flex-1">
+        <label class="field-label">Accent</label>
+        <div class="color-picker-wrap">
+          <input type="color" id="in-point-color" value="#ff0000">
+        </div>
+      </div>
+      <div class="flex-1">
+        <label class="field-label">Text</label>
+        <div class="color-picker-wrap">
+          <input type="color" id="in-text-color" value="#ffffff">
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="flex flex-col gap-2.5">
+      <button class="btn-primary btn-apply" id="btn-update">適用してプレビュー</button>
+      <button class="btn-primary btn-save" id="btn-capture">画像として保存</button>
+    </div>
+  </div>
+
+</div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
