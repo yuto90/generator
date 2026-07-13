@@ -78,6 +78,28 @@ test('portal exposes an accessible toggle and imports shared theme logic', async
   assert.match(html, /postTheme/);
 });
 
+test('portal exposes accessible mobile drawer controls', async () => {
+  const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+
+  assert.match(html, /class="mobile-header"/);
+  assert.match(html, /class="menu-toggle"[^>]*aria-controls="generator-drawer"[^>]*aria-expanded="false"/);
+  assert.match(html, /id="mobile-generator-name"/);
+  assert.match(html, /id="generator-drawer"[^>]*aria-label="ジェネレーター一覧"/);
+  assert.match(html, /id="gen-list"[^>]*aria-label="ジェネレーターを選択"/);
+  assert.match(html, /class="drawer-backdrop"[^>]*aria-hidden="true"/);
+});
+
+test('portal wires the mobile drawer open and dismissal paths', async () => {
+  const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+
+  assert.match(html, /from '\.\/drawer\.js'/);
+  assert.match(html, /menuToggle\.addEventListener\('click'/);
+  assert.match(html, /backdrop\.addEventListener\('click'/);
+  assert.match(html, /event\.key === 'Escape'/);
+  assert.match(html, /closeDrawer\(false\)/);
+  assert.match(html, /syncDrawerForViewport/);
+});
+
 test('music player wires theme UI and both card palettes', async () => {
   const [html, js] = await Promise.all([
     readFile(new URL('../music_player/index.html', import.meta.url), 'utf8'),
