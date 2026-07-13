@@ -370,7 +370,7 @@
 
   <script type="module">
     import { readTheme, writeTheme, applyTheme, isThemeMessage, postTheme } from './theme.js';
-    import { applyDrawerState } from './drawer.js';
+    import { applyDrawerState, getDrawerFocusTarget } from './drawer.js';
 
     const GENERATORS = [
       {
@@ -412,11 +412,20 @@
     const rootEl = document.documentElement;
     const themeToggles = [...document.querySelectorAll('[data-theme-toggle]')];
     const menuToggle = document.querySelector('.menu-toggle');
+    const mobileThemeToggle = document.querySelector('.mobile-theme-toggle');
     const drawer = document.getElementById('generator-drawer');
     const backdrop = document.querySelector('.drawer-backdrop');
+    const main = document.querySelector('.main');
     const mobileGeneratorName = document.getElementById('mobile-generator-name');
     const mobileQuery = window.matchMedia('(max-width: 768px)');
-    const drawerElements = { root: rootEl, toggle: menuToggle, drawer, backdrop };
+    const drawerElements = {
+      root: rootEl,
+      toggle: menuToggle,
+      drawer,
+      backdrop,
+      main,
+      mobileThemeToggle,
+    };
     let drawerOpen = false;
     let currentTheme = readTheme();
 
@@ -464,6 +473,17 @@
     });
     backdrop.addEventListener('click', () => closeDrawer());
     document.addEventListener('keydown', event => {
+      if (event.key === 'Tab' && drawerOpen) {
+        const target = getDrawerFocusTarget({
+          current: document.activeElement,
+          menuToggle,
+          drawerItems: [...drawer.querySelectorAll('.gen-item')],
+        }, event.shiftKey);
+        if (target) {
+          event.preventDefault();
+          target.focus();
+        }
+      }
       if (event.key === 'Escape' && drawerOpen) closeDrawer();
     });
     mobileQuery.addEventListener('change', () => {
