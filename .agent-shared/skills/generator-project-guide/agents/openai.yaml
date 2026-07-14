@@ -1,0 +1,7 @@
+interface:
+  display_name: "Generator Project Guide"
+  short_description: "Run, test, and extend the Generator repository"
+  default_prompt: "Use $generator-project-guide to run, test, or extend the Generator repository."
+
+policy:
+  allow_implicit_invocation: true
