@@ -1,0 +1,5 @@
+personality = "friendly"
+
+# MCP server sections generated from .agent-shared/mcp/servers.json.
+# Edit the shared source, then run:
+# node .agent-shared/scripts/sync-agent-mcp.mjs
