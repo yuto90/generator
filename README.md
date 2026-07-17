@@ -1,33 +1,46 @@
 # generator
 
-このリポジトリでは、今後プロジェクトルート直下に複数のジェネレーターアプリを追加していく想定です。
-ローカル確認時は、各アプリのフォルダに移動して個別に起動するのではなく、プロジェクトルートをそのまま静的サーバーで配信してください。
+複数のジェネレーターアプリを 1 つの Vite + React + TypeScript SPA として管理するリポジトリです。
+左サイドバーのポータルからジェネレーターを選ぶと、メイン画面に表示されます。
 
 ## ローカル起動方法
 
-プロジェクトルートで次を実行します。
+初回のみ依存をインストールします。
 
 ```bash
 cd /Users/apple/dev/generator
-python3 -m http.server 8000
+npm install
 ```
 
-起動後、http://127.0.0.1:8000/ を開くとポータル画面が表示されます。
-左サイドバーからジェネレータを選ぶと、メイン画面に表示されます。
+開発サーバーを起動します。
 
-各アプリに直接アクセスすることもできます。
+```bash
+npm run dev
+```
 
-- music_player: http://127.0.0.1:8000/music_player/
-- apple_music_player: http://127.0.0.1:8000/apple_music_player/
-- youtube_music_player: http://127.0.0.1:8000/youtube_music_player/
-- spotify_player: http://127.0.0.1:8000/spotify_player/
-- instagram_reel: http://127.0.0.1:8000/instagram_reel/
+起動後、http://localhost:5173/ を開くとポータル画面が表示されます。
 
-今後アプリが増えた場合も、同じサーバーで次のように開けます。
+各アプリにはハッシュルートで直接アクセスすることもできます。
 
-- example_app: http://127.0.0.1:8000/example_app/
+- music_player: http://localhost:5173/#/music_player
+- apple_music_player: http://localhost:5173/#/apple_music_player
+- youtube_music_player: http://localhost:5173/#/youtube_music_player
+- spotify_player: http://localhost:5173/#/spotify_player
+- instagram_reel: http://localhost:5173/#/instagram_reel
 
-## 補足
+## ビルドとテスト
 
-- 停止するときは `Ctrl+C` を押します。
-- `8000` 番ポートが使用中なら、`python3 -m http.server 8080` のように別ポートを指定してください。
+```bash
+npm run build    # 型チェック + 本番ビルド(dist/)
+npm run preview  # ビルド成果物の確認
+npm test         # vitest run + node --test tests/*.test.js
+```
+
+`dist/` は任意の静的サーバーで配信できます(ハッシュルーターのため SPA フォールバック設定は不要です)。
+
+## アプリの追加
+
+1. `src/apps/<app-name>/` にコンポーネントと CSS を追加します。
+2. `src/generators.tsx` のレジストリに登録すると、サイドバーとルーティングに反映されます。
+
+詳細は `.agent-shared/skills/generator-project-guide/SKILL.md` を参照してください。

@@ -19,7 +19,7 @@ test('Codex and Claude Code load the same shared instructions', async () => {
   assert.equal(agentsTarget, '.agent-shared/instructions/common.md');
   assert.match(claudeInstructions, /^@AGENTS\.md$/m);
   assert.match(commonInstructions, /generator-project-guide/);
-  assert.match(commonInstructions, /node --test tests\/\*\.test\.js/);
+  assert.match(commonInstructions, /npm test/);
 });
 
 test('Codex and Claude Code discover the same shared skill directory', async () => {
@@ -40,8 +40,8 @@ test('shared generator project skill has provider-neutral metadata', async () =>
 
   assert.match(skill, /^name: generator-project-guide$/m);
   assert.match(skill, /^description: .+Generator.+$/m);
-  assert.match(skill, /python3 -m http\.server 8000/);
-  assert.match(skill, /node --test tests\/\*\.test\.js/);
+  assert.match(skill, /npm run dev/);
+  assert.match(skill, /npm test/);
   assert.match(openaiMetadata, /display_name: "Generator Project Guide"/);
   assert.match(openaiMetadata, /\$generator-project-guide/);
   assert.match(openaiMetadata, /allow_implicit_invocation: true/);
@@ -51,5 +51,5 @@ test('existing Claude launch configuration remains available', async () => {
   const launch = JSON.parse(await readRepoFile('.claude/launch.json'));
 
   assert.equal(launch.configurations[0].name, 'generator-portal');
-  assert.equal(launch.configurations[0].runtimeExecutable, 'python3');
+  assert.equal(launch.configurations[0].runtimeExecutable, 'npm');
 });
