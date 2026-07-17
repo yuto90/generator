@@ -1,0 +1,285 @@
+/* ポータル(旧ルート index.html の <style>)。配色は tokens.css の --gen-* を参照する */
+
+.mobile-header,
+.drawer-backdrop { display: none; }
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+body {
+  margin: 0;
+  background: var(--gen-page-bg);
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+  color: var(--gen-text-main);
+}
+
+/* 旧構成では body が flex コンテナだったが、React では #root が担う */
+#root {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ---- Sidebar ---- */
+.sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 14px;
+  background: var(--gen-panel-bg);
+  border-right: 1px solid var(--gen-border);
+}
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  margin-bottom: 6px;
+}
+.sidebar-header .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7c6af0, #fa2d48);
+}
+.sidebar-header h1 {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gen-text-strong);
+  margin: 0;
+}
+.sidebar-sub {
+  font-size: 11px;
+  color: var(--gen-text-muted);
+  padding: 0 10px;
+  margin: 0 0 20px;
+}
+
+.gen-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 4px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.gen-item:hover { background: var(--gen-hover); }
+.gen-item.active {
+  background: var(--gen-active);
+  border-color: var(--gen-border-active);
+}
+
+.gen-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px var(--gen-icon-shadow);
+}
+.gen-icon svg { width: 18px; height: 18px; fill: #fff; }
+
+.gen-info { min-width: 0; }
+.gen-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gen-text-name);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gen-desc {
+  font-size: 11px;
+  color: var(--gen-text-muted);
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 0 10px;
+  font-size: 10px;
+  color: var(--gen-text-subtle);
+}
+.sidebar-footer-label { display: block; margin-bottom: 10px; }
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  border: 1px solid var(--gen-border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: var(--gen-hover);
+  color: var(--gen-text-main);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.theme-toggle:hover { background: var(--gen-active); }
+.theme-icon { font-size: 14px; letter-spacing: 0.08em; }
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--gen-accent);
+  outline-offset: 2px;
+}
+.menu-toggle:focus-visible,
+.gen-item:focus-visible {
+  outline: 2px solid var(--gen-accent);
+  outline-offset: 2px;
+}
+
+/* ---- Main ---- */
+/* 旧構成の iframe と同様に、デスクトップではアプリ側だけがスクロールする */
+.main {
+  flex: 1;
+  min-width: 0;
+  height: 100vh;
+  overflow-y: auto;
+  background: var(--gen-page-bg);
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+  #root { flex-direction: column; }
+
+  .mobile-header {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    align-items: center;
+    gap: 8px;
+    min-height: 56px;
+    padding: 6px 10px;
+    padding-top: max(6px, env(safe-area-inset-top));
+    background: color-mix(in srgb, var(--gen-mobile-panel-bg) 92%, transparent);
+    border-bottom: 1px solid var(--gen-border);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+  .menu-toggle {
+    display: grid;
+    align-content: center;
+    justify-content: center;
+    gap: 5px;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1px solid var(--gen-border);
+    border-radius: 12px;
+    background: var(--gen-hover);
+    color: var(--gen-text-main);
+    cursor: pointer;
+  }
+  .menu-toggle span {
+    display: block;
+    width: 18px;
+    height: 2px;
+    border-radius: 999px;
+    background: currentColor;
+  }
+  #mobile-generator-name {
+    overflow: hidden;
+    color: var(--gen-text-strong);
+    font-size: 14px;
+    font-weight: 650;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .mobile-theme-toggle {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+    padding: 0;
+  }
+  .mobile-theme-toggle .theme-icon { font-size: 13px; }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 40;
+    width: min(84vw, 320px);
+    height: 100dvh;
+    padding: max(24px, env(safe-area-inset-top)) 14px 24px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    background: var(--gen-mobile-panel-bg);
+    border-right: 1px solid var(--gen-border);
+    box-shadow: 18px 0 48px rgba(0, 0, 0, 0.32);
+    transform: translateX(-105%);
+    transition: transform 180ms ease;
+  }
+  .drawer-open .sidebar { transform: translateX(0); }
+  .sidebar-header { margin-top: 4px; }
+  .sidebar-sub { margin-bottom: 16px; }
+  .sidebar-footer { display: none; }
+  .gen-item {
+    width: 100%;
+    min-height: 56px;
+    margin-bottom: 6px;
+  }
+  .gen-desc { display: block; }
+
+  .drawer-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 35;
+    display: block;
+    background: rgba(0, 0, 0, 0.52);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 180ms ease;
+  }
+  .drawer-open .drawer-backdrop {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  :root.drawer-open,
+  :root.drawer-open body { overflow: hidden; }
+
+  /* モバイルでは通常フローでページ全体がスクロールする(旧 iframe 高さ同期の代替) */
+  .main {
+    height: auto;
+    overflow-y: visible;
+  }
+}
+
+@media (max-width: 768px) and (prefers-reduced-motion: reduce) {
+  .sidebar,
+  .drawer-backdrop { transition: none; }
+}

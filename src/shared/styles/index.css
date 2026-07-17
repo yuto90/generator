@@ -1,0 +1,15 @@
+@import 'tailwindcss';
+@import './tokens.css';
+
+@layer base {
+  /* Tailwind v4 の Preflight は button { cursor: default } のため、
+     Play CDN(v3.4)時代の挙動に固定する */
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+}
