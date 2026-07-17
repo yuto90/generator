@@ -14,7 +14,7 @@ let apiPromise: Promise<typeof YT> | null = null;
 export function loadYouTubeApi(): Promise<typeof YT> {
   if (window.YT?.Player) return Promise.resolve(window.YT);
 
-  apiPromise ??= new Promise(resolve => {
+  apiPromise ??= new Promise((resolve, reject) => {
     const previous = window.onYouTubeIframeAPIReady;
     window.onYouTubeIframeAPIReady = () => {
       previous?.();
@@ -22,10 +22,20 @@ export function loadYouTubeApi(): Promise<typeof YT> {
     };
     const script = document.createElement('script');
     script.src = 'https://www.youtube.com/iframe_api';
+    script.onerror = () => {
+      script.remove();
+      apiPromise = null; // 次回の呼び出しで再試行できるようにする
+      reject(new Error('YouTube IFrame API を読み込めませんでした'));
+    };
     document.head.appendChild(script);
   });
 
   return apiPromise;
+}
+
+interface PendingCue {
+  videoId: string;
+  startSeconds?: number;
 }
 
 export interface UseYouTubePlayerOptions {
@@ -34,6 +44,8 @@ export interface UseYouTubePlayerOptions {
   height: string;
   playerVars?: YT.PlayerVars;
   onStateChange?: (state: YT.PlayerState) => void;
+  /** API 読み込み失敗・動画エラーの通知 */
+  onError?: () => void;
   /** 再生中に一定間隔で現在位置を通知する(旧実装の setInterval 500ms を共通化) */
   onProgress?: (currentTime: number, duration: number) => void;
   progressIntervalMs?: number;
@@ -44,9 +56,11 @@ export interface YouTubePlayerHandle {
   containerRef: (element: HTMLDivElement | null) => void;
   ready: boolean;
   /** 動画を読み込む。プレーヤー未生成なら生成し、生成済みなら cueVideoById する */
-  cueVideo: (videoId: string) => void;
+  cueVideo: (videoId: string, startSeconds?: number) => void;
   play: () => void;
   pause: () => void;
+  stop: () => void;
+  seekTo: (seconds: number) => void;
   seekToPercent: (percent: number) => void;
   setVolume: (volume: number) => void;
   getDuration: () => number;
@@ -56,10 +70,10 @@ export interface YouTubePlayerHandle {
 export function useYouTubePlayer(options: UseYouTubePlayerOptions): YouTubePlayerHandle {
   const { width, height, progressIntervalMs = 500 } = options;
   const containerElRef = useRef<HTMLDivElement | null>(null);
-  const mountElRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<YT.Player | null>(null);
+  const readyRef = useRef(false);
   const creatingRef = useRef(false);
-  const pendingVideoIdRef = useRef<string | null>(null);
+  const pendingCueRef = useRef<PendingCue | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const unmountedRef = useRef(false);
   const [ready, setReady] = useState(false);
@@ -80,9 +94,6 @@ export function useYouTubePlayer(options: UseYouTubePlayerOptions): YouTubePlaye
   }, []);
 
   const handleStateChange = useCallback((event: YT.OnStateChangeEvent) => {
-    const player = playerRef.current;
-    if (!player) return;
-
     if (event.data === YT.PlayerState.PLAYING) {
       stopProgressTimer();
       timerRef.current = setInterval(() => {
@@ -97,15 +108,31 @@ export function useYouTubePlayer(options: UseYouTubePlayerOptions): YouTubePlaye
     optionsRef.current.onStateChange?.(event.data);
   }, [progressIntervalMs, stopProgressTimer]);
 
-  const createPlayer = useCallback(async (videoId: string) => {
-    if (creatingRef.current) {
-      pendingVideoIdRef.current = videoId;
+  const applyPendingCue = useCallback(() => {
+    const player = playerRef.current;
+    const pending = pendingCueRef.current;
+    if (!player || !readyRef.current || !pending) return;
+    pendingCueRef.current = null;
+    if (pending.startSeconds !== undefined) {
+      player.cueVideoById({ videoId: pending.videoId, startSeconds: pending.startSeconds });
+    } else {
+      player.cueVideoById(pending.videoId);
+    }
+  }, []);
+
+  const createPlayer = useCallback(async () => {
+    if (creatingRef.current || playerRef.current) return;
+    creatingRef.current = true;
+
+    let yt: typeof YT;
+    try {
+      yt = await loadYouTubeApi();
+    } catch {
+      creatingRef.current = false;
+      if (!unmountedRef.current) optionsRef.current.onError?.();
       return;
     }
-    creatingRef.current = true;
-    pendingVideoIdRef.current = videoId;
 
-    const yt = await loadYouTubeApi();
     const container = containerElRef.current;
     if (unmountedRef.current || !container) {
       creatingRef.current = false;
@@ -116,30 +143,34 @@ export function useYouTubePlayer(options: UseYouTubePlayerOptions): YouTubePlaye
     // 使い捨ての子要素を挟む
     const mount = document.createElement('div');
     container.appendChild(mount);
-    mountElRef.current = mount;
 
     playerRef.current = new yt.Player(mount, {
       width,
       height,
-      videoId: pendingVideoIdRef.current ?? videoId,
       playerVars: optionsRef.current.playerVars,
       events: {
         onReady: () => {
-          if (!unmountedRef.current) setReady(true);
+          if (unmountedRef.current) return;
+          readyRef.current = true;
+          applyPendingCue();
+          setReady(true);
         },
         onStateChange: handleStateChange,
+        onError: () => {
+          if (!unmountedRef.current) optionsRef.current.onError?.();
+        },
       },
     });
-  }, [width, height, handleStateChange]);
+  }, [width, height, handleStateChange, applyPendingCue]);
 
-  const cueVideo = useCallback((videoId: string) => {
-    const player = playerRef.current;
-    if (player && typeof player.cueVideoById === 'function') {
-      player.cueVideoById(videoId);
+  const cueVideo = useCallback((videoId: string, startSeconds?: number) => {
+    pendingCueRef.current = { videoId, startSeconds };
+    if (readyRef.current && playerRef.current) {
+      applyPendingCue();
     } else {
-      void createPlayer(videoId);
+      void createPlayer();
     }
-  }, [createPlayer]);
+  }, [applyPendingCue, createPlayer]);
 
   useEffect(() => {
     unmountedRef.current = false;
@@ -147,10 +178,14 @@ export function useYouTubePlayer(options: UseYouTubePlayerOptions): YouTubePlaye
       // ルート遷移後に音が鳴り続けないよう必ず破棄する(iframe 廃止に伴う新規要件)
       unmountedRef.current = true;
       stopProgressTimer();
-      playerRef.current?.destroy();
+      const player = playerRef.current;
       playerRef.current = null;
-      mountElRef.current?.remove();
-      mountElRef.current = null;
+      readyRef.current = false;
+      try {
+        player?.destroy();
+      } catch {
+        // 生成途中の破棄は無視してよい
+      }
     };
   }, [stopProgressTimer]);
 
@@ -160,6 +195,11 @@ export function useYouTubePlayer(options: UseYouTubePlayerOptions): YouTubePlaye
     cueVideo,
     play: useCallback(() => playerRef.current?.playVideo(), []),
     pause: useCallback(() => playerRef.current?.pauseVideo(), []),
+    stop: useCallback(() => {
+      const player = playerRef.current;
+      if (player && typeof player.stopVideo === 'function') player.stopVideo();
+    }, []),
+    seekTo: useCallback((seconds: number) => playerRef.current?.seekTo(seconds, true), []),
     seekToPercent: useCallback((percent: number) => {
       const player = playerRef.current;
       if (player && typeof player.getDuration === 'function') {

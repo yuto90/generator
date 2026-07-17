@@ -130,7 +130,9 @@ body {
   color: var(--gen-text-subtle);
 }
 .sidebar-footer-label { display: block; margin-bottom: 10px; }
-.theme-toggle {
+/* .theme-toggle は各アプリも使うクラス名のため、ポータル配下に限定する */
+.sidebar .theme-toggle,
+.mobile-header .theme-toggle {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -145,9 +147,12 @@ body {
   font-size: 11px;
   cursor: pointer;
 }
-.theme-toggle:hover { background: var(--gen-active); }
-.theme-icon { font-size: 14px; letter-spacing: 0.08em; }
-.theme-toggle:focus-visible {
+.sidebar .theme-toggle:hover,
+.mobile-header .theme-toggle:hover { background: var(--gen-active); }
+.sidebar .theme-icon,
+.mobile-header .theme-icon { font-size: 14px; letter-spacing: 0.08em; }
+.sidebar .theme-toggle:focus-visible,
+.mobile-header .theme-toggle:focus-visible {
   outline: 2px solid var(--gen-accent);
   outline-offset: 2px;
 }
