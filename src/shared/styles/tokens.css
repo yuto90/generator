@@ -1,0 +1,40 @@
+/*
+ * 共通デザイントークン。
+ * 旧構成でアプリごとに名前がばらついていた CSS 変数を --gen-* に統一する。
+ * 値はポータルの配色をデフォルトとし、各アプリは自分のルート要素
+ * (.app-<id>)で必要な値を上書きして従来の見た目を維持する。
+ */
+:root {
+  color-scheme: dark;
+  --gen-page-bg: #0a0a0f;
+  --gen-panel-bg: rgba(255, 255, 255, 0.03);
+  --gen-mobile-panel-bg: #12121a;
+  --gen-text-main: #e2e2ea;
+  --gen-text-strong: rgba(255, 255, 255, 0.9);
+  --gen-text-name: rgba(255, 255, 255, 0.88);
+  --gen-text-muted: rgba(255, 255, 255, 0.33);
+  --gen-text-subtle: rgba(255, 255, 255, 0.2);
+  --gen-border: rgba(255, 255, 255, 0.08);
+  --gen-border-active: rgba(255, 255, 255, 0.12);
+  --gen-hover: rgba(255, 255, 255, 0.05);
+  --gen-active: rgba(255, 255, 255, 0.07);
+  --gen-icon-shadow: rgba(0, 0, 0, 0.35);
+  --gen-accent: #7c6af0;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --gen-page-bg: #f5f5fa;
+  --gen-panel-bg: rgba(255, 255, 255, 0.82);
+  --gen-mobile-panel-bg: #ffffff;
+  --gen-text-main: #24242d;
+  --gen-text-strong: #17171d;
+  --gen-text-name: #24242d;
+  --gen-text-muted: rgba(36, 36, 45, 0.58);
+  --gen-text-subtle: rgba(36, 36, 45, 0.42);
+  --gen-border: rgba(25, 25, 35, 0.12);
+  --gen-border-active: rgba(40, 35, 80, 0.2);
+  --gen-hover: rgba(40, 35, 80, 0.06);
+  --gen-active: rgba(40, 35, 80, 0.1);
+  --gen-icon-shadow: rgba(30, 25, 50, 0.18);
+}

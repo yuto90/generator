@@ -1,0 +1,345 @@
+/* Spotify style player generator(旧 spotify_player/index.html の <style>)
+   SPA では他アプリと同居するため、全セレクタを .app-spotify 配下にスコープし、
+   共通概念の変数は --gen-* に名前を統一している(値は旧実装のまま)。 */
+
+.app-spotify {
+  --gen-page-bg: #090d0b;
+  --page-glow: rgba(29, 185, 84, 0.12);
+  --gen-panel-bg: rgba(19, 24, 21, 0.94);
+  --gen-panel-border: rgba(255, 255, 255, 0.08);
+  --gen-field-bg: rgba(255, 255, 255, 0.05);
+  --gen-field-border: rgba(255, 255, 255, 0.1);
+  --gen-text-main: #f2f5f3;
+  --gen-text-muted: rgba(242, 245, 243, 0.55);
+  --card-bg-top: #1d2420;
+  --card-bg-bottom: #101310;
+  --card-text: #ffffff;
+  --card-muted: rgba(255, 255, 255, 0.62);
+  --card-track: rgba(255, 255, 255, 0.25);
+  --card-shadow: rgba(0, 0, 0, 0.52);
+  --gen-accent: #1DB954;
+  --gen-accent-hover: #1ed760;
+  --gen-danger: #ff7b7b;
+}
+
+:root[data-theme='light'] .app-spotify {
+  --gen-page-bg: #f2f6f3;
+  --page-glow: rgba(29, 185, 84, 0.16);
+  --gen-panel-bg: rgba(255, 255, 255, 0.92);
+  --gen-panel-border: rgba(19, 35, 25, 0.12);
+  --gen-field-bg: rgba(255, 255, 255, 0.88);
+  --gen-field-border: rgba(19, 35, 25, 0.16);
+  --gen-text-main: #172019;
+  --gen-text-muted: rgba(23, 32, 25, 0.58);
+  --card-bg-top: #ffffff;
+  --card-bg-bottom: #e9eee9;
+  --card-text: #191414;
+  --card-muted: rgba(25, 20, 20, 0.6);
+  --card-track: rgba(25, 20, 20, 0.22);
+  --card-shadow: rgba(33, 55, 40, 0.2);
+}
+
+.app-spotify {
+  min-width: 320px;
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+  color: var(--gen-text-main);
+  background:
+    radial-gradient(circle at 18% 2%, var(--page-glow), transparent 38%),
+    var(--gen-page-bg);
+}
+
+.app-spotify button,
+.app-spotify input { font: inherit; }
+.app-spotify button { -webkit-tap-highlight-color: transparent; }
+
+.app-spotify .app-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+}
+
+.app-spotify .preview-stage {
+  min-width: 0;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 40px;
+}
+
+.app-spotify .spotify-card {
+  width: 340px;
+  max-width: 100%;
+  padding: 20px 22px 22px;
+  color: var(--card-text);
+  background: linear-gradient(165deg, var(--card-bg-top), var(--card-bg-bottom) 72%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 28px;
+  box-shadow: 0 30px 75px var(--card-shadow);
+  overflow: hidden;
+}
+
+:root[data-theme='light'] .app-spotify .spotify-card {
+  border-color: rgba(25, 20, 20, 0.08);
+}
+
+.app-spotify .card-topbar,
+.app-spotify .track-row,
+.app-spotify .transport,
+.app-spotify .volume-row,
+.app-spotify .device-row {
+  display: flex;
+  align-items: center;
+}
+
+.app-spotify .card-topbar {
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.app-spotify .playing-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: 0.68;
+}
+
+.app-spotify .icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.app-spotify .icon-button:hover { background: rgba(255, 255, 255, 0.08); }
+:root[data-theme='light'] .app-spotify .icon-button:hover { background: rgba(25, 20, 20, 0.07); }
+.app-spotify .icon-button:focus-visible,
+.app-spotify .theme-toggle:focus-visible,
+.app-spotify .primary-button:focus-visible,
+.app-spotify .secondary-button:focus-visible {
+  outline: 2px solid var(--gen-accent);
+  outline-offset: 2px;
+}
+.app-spotify .icon-button svg { width: 20px; height: 20px; fill: currentColor; }
+
+.app-spotify .artwork {
+  width: 100%;
+  aspect-ratio: 1;
+  margin-bottom: 20px;
+  border-radius: 10px;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34);
+}
+
+.app-spotify .track-row { gap: 12px; margin-bottom: 16px; }
+.app-spotify .track-copy { flex: 1; min-width: 0; }
+.app-spotify .track-title {
+  overflow: hidden;
+  font-size: 20px;
+  font-weight: 750;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.app-spotify .track-artist {
+  overflow: hidden;
+  margin-top: 3px;
+  color: var(--card-muted);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.app-spotify .heart-button { color: var(--gen-accent); }
+
+.app-spotify .range-shell {
+  position: relative;
+  height: 18px;
+  display: flex;
+  align-items: center;
+}
+.app-spotify .range-track,
+.app-spotify .range-fill {
+  position: absolute;
+  right: 0;
+  left: 0;
+  height: 4px;
+  border-radius: 999px;
+}
+.app-spotify .range-track { background: var(--card-track); }
+.app-spotify .range-fill {
+  right: auto;
+  width: 0;
+  background: var(--gen-accent);
+  pointer-events: none;
+}
+.app-spotify .range-input {
+  position: absolute;
+  z-index: 2;
+  width: 100%;
+  height: 18px;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.app-spotify .time-row {
+  display: flex;
+  justify-content: space-between;
+  color: var(--card-muted);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.app-spotify .transport {
+  justify-content: space-between;
+  margin: 14px 2px 12px;
+}
+.app-spotify .transport .minor { width: 28px; height: 28px; color: var(--card-muted); }
+.app-spotify .transport .skip { width: 38px; height: 38px; }
+.app-spotify .transport .skip svg { width: 27px; height: 27px; }
+.app-spotify .transport .active { color: var(--gen-accent); }
+.app-spotify .play-button {
+  width: 54px;
+  height: 54px;
+  color: var(--card-bg-bottom);
+  background: var(--card-text);
+  transition: transform 0.15s ease;
+}
+.app-spotify .play-button:hover { background: var(--card-text); transform: scale(1.04); }
+.app-spotify .play-button svg { width: 25px; height: 25px; }
+
+.app-spotify .volume-row { gap: 9px; margin-top: 5px; }
+.app-spotify .volume-row > svg { width: 16px; height: 16px; fill: currentColor; color: var(--card-muted); }
+.app-spotify .volume-row .range-shell { flex: 1; }
+.app-spotify .volume-row .range-track,
+.app-spotify .volume-row .range-fill { height: 3px; }
+
+.app-spotify .device-row {
+  justify-content: space-between;
+  margin-top: 17px;
+  color: var(--card-muted);
+  font-size: 10px;
+}
+.app-spotify .device-copy { display: flex; align-items: center; gap: 6px; }
+.app-spotify .device-copy svg,
+.app-spotify .queue-icon { width: 16px; height: 16px; fill: currentColor; }
+.app-spotify .device-copy span { color: var(--gen-accent); font-weight: 650; }
+
+.app-spotify .editor {
+  min-height: 100vh;
+  padding: 24px;
+  background: var(--gen-panel-bg);
+  border-left: 1px solid var(--gen-panel-border);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.app-spotify .editor-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.app-spotify .editor-title-wrap { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.app-spotify .brand-dot { width: 8px; height: 8px; flex: 0 0 auto; border-radius: 50%; background: var(--gen-accent); box-shadow: 0 0 18px rgba(29, 185, 84, 0.6); }
+.app-spotify .editor h1 { margin: 0; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; }
+
+.app-spotify .theme-toggle {
+  min-height: 36px;
+  padding: 7px 9px;
+  color: var(--gen-text-main);
+  background: var(--gen-field-bg);
+  border: 1px solid var(--gen-field-border);
+  border-radius: 9px;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.app-spotify .form { display: grid; gap: 15px; margin-top: 24px; }
+.app-spotify .field-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--gen-text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.app-spotify .field-input,
+.app-spotify .file-input {
+  width: 100%;
+  min-height: 40px;
+  padding: 9px 11px;
+  color: var(--gen-text-main);
+  background: var(--gen-field-bg);
+  border: 1px solid var(--gen-field-border);
+  border-radius: 9px;
+  outline: none;
+}
+.app-spotify .field-input:focus,
+.app-spotify .file-input:focus { border-color: var(--gen-accent); box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.12); }
+.app-spotify .field-input[aria-invalid='true'] { border-color: var(--gen-danger); }
+.app-spotify .file-input { padding: 7px; color: var(--gen-text-muted); font-size: 11px; }
+.app-spotify .file-input::file-selector-button {
+  margin-right: 8px;
+  padding: 5px 8px;
+  color: var(--gen-text-main);
+  background: rgba(29, 185, 84, 0.12);
+  border: 1px solid rgba(29, 185, 84, 0.28);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.app-spotify .time-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.app-spotify .field-help,
+.app-spotify .field-error,
+.app-spotify .playback-status { margin: 5px 0 0; font-size: 10px; line-height: 1.45; }
+.app-spotify .field-help,
+.app-spotify .playback-status { color: var(--gen-text-muted); }
+.app-spotify .field-error { min-height: 15px; color: var(--gen-danger); }
+.app-spotify .playback-status[data-tone='error'] { color: var(--gen-danger); }
+.app-spotify .playback-status[data-tone='success'] { color: var(--gen-accent); }
+
+.app-spotify .youtube-player-panel[hidden] { display: none; }
+.app-spotify .youtube-player-panel {
+  width: 100%;
+  padding: 8px;
+  background: #000;
+  border: 1px solid var(--gen-field-border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.app-spotify #youtube-audio,
+.app-spotify #youtube-audio iframe {
+  display: block;
+  width: 272px;
+  height: 200px;
+  max-width: 100%;
+  margin: 0 auto;
+  border: 0;
+  background: #000;
+}
+
+.app-spotify .actions { display: grid; gap: 9px; margin-top: 4px; }
+.app-spotify .primary-button,
+.app-spotify .secondary-button {
+  min-height: 42px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+}
+.app-spotify .primary-button { color: #07150c; background: var(--gen-accent); border: 0; }
+.app-spotify .primary-button:hover { background: var(--gen-accent-hover); }
+.app-spotify .secondary-button { color: var(--gen-text-main); background: transparent; border: 1px solid var(--gen-field-border); }
+.app-spotify .secondary-button:hover { background: var(--gen-field-bg); }
+.app-spotify .primary-button:disabled,
+.app-spotify .secondary-button:disabled { opacity: 0.55; cursor: wait; }
+
+@media (max-width: 768px) {
+  .app-spotify .app-shell { grid-template-columns: 1fr; }
+  .app-spotify .preview-stage { min-height: auto; padding: 28px 16px; }
+  .app-spotify .editor { min-height: auto; padding: 22px 18px 32px; border-top: 1px solid var(--gen-panel-border); border-left: 0; }
+  .app-spotify .spotify-card { width: min(340px, calc(100vw - 32px)); }
+}
