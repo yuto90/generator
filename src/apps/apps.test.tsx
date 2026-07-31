@@ -1,5 +1,5 @@
-import { describe, expect, test, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { ThemeProvider } from '../shared/theme/ThemeContext';
@@ -9,9 +9,22 @@ import AppleMusicPlayerApp from './apple_music_player/AppleMusicPlayerApp';
 import YoutubeMusicPlayerApp from './youtube_music_player/YoutubeMusicPlayerApp';
 import InstagramReelApp from './instagram_reel/InstagramReelApp';
 
-vi.mock('html-to-image', () => ({
-  toPng: vi.fn(async () => 'data:image/png;base64,'),
+const captureSnap = vi.hoisted(() => vi.fn());
+const download = vi.hoisted(() => vi.fn<() => Promise<void>>());
+
+vi.mock('@zumer/snapdom', () => ({
+  snapdom: captureSnap,
 }));
+
+beforeEach(() => {
+  download.mockReset();
+  download.mockResolvedValue(undefined);
+  captureSnap.mockReset();
+  captureSnap.mockResolvedValue({
+    toCanvas: vi.fn().mockResolvedValue(document.createElement('canvas')),
+    download,
+  });
+});
 
 function renderApp(app: ReactNode) {
   return render(<ThemeProvider>{app}</ThemeProvider>);
@@ -96,5 +109,60 @@ describe('InstagramReelApp', () => {
 
     expect(document.getElementById('reel-username')).toHaveTextContent('claude_dev');
     expect(document.getElementById('reel-audio-name')).toHaveTextContent('claude_dev・オリジナル音源');
+  });
+});
+
+describe('画像保存ボタン', () => {
+  test.each([
+    ['MusicPlayerApp', () => <MusicPlayerApp />],
+    ['AppleMusicPlayerApp', () => <AppleMusicPlayerApp />],
+    ['YoutubeMusicPlayerApp', () => <YoutubeMusicPlayerApp />],
+    ['InstagramReelApp', () => <InstagramReelApp />],
+    ['SpotifyPlayerApp', () => <SpotifyPlayerApp />],
+  ])('%sは保存中の再押下を無効化する', async (_name, createApp) => {
+    let resolveDownload!: () => void;
+    const downloadPromise = new Promise<void>(resolve => { resolveDownload = resolve; });
+    download.mockReturnValueOnce(downloadPromise);
+    const user = userEvent.setup();
+    renderApp(createApp());
+
+    const button = screen.getByRole('button', { name: '画像として保存' });
+    await user.click(button);
+
+    expect(button).toBeDisabled();
+    expect(button).toHaveTextContent('画像を生成中…');
+
+    resolveDownload();
+    await waitFor(() => {
+      expect(button).not.toBeDisabled();
+      expect(button).toHaveTextContent('画像として保存');
+    });
+  });
+});
+
+describe('Spotify保存ステータス', () => {
+  test('成功時は保存操作の開始を表示し、ボタンを戻す', async () => {
+    const user = userEvent.setup();
+    renderApp(<SpotifyPlayerApp />);
+    const button = screen.getByRole('button', { name: '画像として保存' });
+
+    await user.click(button);
+
+    await waitFor(() => expect(screen.getByText('保存操作を開始しました')).toBeInTheDocument());
+    expect(button).not.toBeDisabled();
+    expect(button).toHaveTextContent('画像として保存');
+  });
+
+  test('失敗時は再試行方法を含むエラーを表示し、ボタンを戻す', async () => {
+    download.mockRejectedValueOnce(new Error('renderer failed'));
+    const user = userEvent.setup();
+    renderApp(<SpotifyPlayerApp />);
+    const button = screen.getByRole('button', { name: '画像として保存' });
+
+    await user.click(button);
+
+    await waitFor(() => expect(screen.getByText('画像を生成できませんでした。ページを再読み込みして、もう一度お試しください。')).toBeInTheDocument());
+    expect(button).not.toBeDisabled();
+    expect(button).toHaveTextContent('画像として保存');
   });
 });

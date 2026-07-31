@@ -82,7 +82,7 @@ export default function YoutubeMusicPlayerApp() {
   const [volume, setVolume] = useState(50);
 
   const cardRef = useRef<HTMLDivElement | null>(null);
-  const { capture } = useCapture();
+  const { capture, capturing } = useCapture();
 
   const yt = useYouTubePlayer({
     width: '1',
@@ -172,9 +172,9 @@ export default function YoutubeMusicPlayerApp() {
   }
 
   function handleCapture() {
-    capture(cardRef.current!, 'youtube_music_player.png').catch((error: unknown) => {
+    capture(cardRef.current, 'youtube_music_player.png').catch((error: unknown) => {
       const message = error instanceof Error ? error.message : String(error);
-      alert('画像の生成に失敗しました: ' + message);
+      alert(message);
     });
   }
 
@@ -375,7 +375,9 @@ export default function YoutubeMusicPlayerApp() {
 
           <div className="flex flex-col gap-2.5">
             <button className="btn-primary btn-apply" id="btn-update" type="button" onClick={() => applyPreview()}>適用してプレビュー</button>
-            <button className="btn-primary btn-save" id="btn-capture" type="button" onClick={handleCapture}>画像として保存</button>
+            <button className="btn-primary btn-save" id="btn-capture" type="button" onClick={handleCapture} disabled={capturing}>
+              {capturing ? '画像を生成中…' : '画像として保存'}
+            </button>
           </div>
         </div>
 
