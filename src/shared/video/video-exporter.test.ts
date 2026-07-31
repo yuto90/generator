@@ -85,7 +85,43 @@ describe('trimAndNormalizeAudio', () => {
 });
 
 describe('exportPlayerVideo', () => {
+  const output = {
+    addVideoTrack: vi.fn(),
+    addAudioTrack: vi.fn(),
+    start: vi.fn(() => Promise.resolve()),
+    finalize: vi.fn(() => Promise.resolve()),
+    cancel: vi.fn(() => Promise.resolve()),
+  };
+  const videoSource = { add: vi.fn<(timestamp: number, duration?: number) => Promise<void>>(() => Promise.resolve()) };
+  const audioSource = { add: vi.fn<(audio: AudioBuffer) => Promise<void>>(() => Promise.resolve()) };
+  const target = { buffer: new Uint8Array([1, 2, 3]).buffer };
+
+  function prepareExport(): HTMLElement {
+    const normalized = createAudioBuffer();
+    vi.stubGlobal('OfflineAudioContext', vi.fn(() => ({ createBuffer: vi.fn(() => normalized) })));
+    mediabunny.BufferTarget.mockImplementation(() => target);
+    mediabunny.Output.mockImplementation(() => output);
+    mediabunny.CanvasSource.mockImplementation(() => videoSource);
+    mediabunny.AudioBufferSource.mockImplementation(() => audioSource);
+    capture.toCanvas.mockResolvedValue(document.createElement('canvas'));
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      clearRect: vi.fn(),
+      drawImage: vi.fn(),
+    } as unknown as CanvasRenderingContext2D);
+
+    const card = document.createElement('div');
+    vi.spyOn(card, 'getBoundingClientRect').mockReturnValue({ width: 360, height: 180 } as DOMRect);
+    return card;
+  }
+
+  beforeEach(() => {
+    mediabunny.canEncodeVideo.mockResolvedValue(true);
+    mediabunny.canEncodeAudio.mockResolvedValue(true);
+  });
+
   afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
     vi.clearAllMocks();
   });
 
@@ -104,5 +140,86 @@ describe('exportPlayerVideo', () => {
 
     expect(mediabunny.Output).not.toHaveBeenCalled();
     expect(capture.toCanvas).not.toHaveBeenCalled();
+  });
+
+  it('30fpsでフレームと音声を追加して MP4 Blob を返す', async () => {
+    const card = prepareExport();
+    let encoding = false;
+    videoSource.add.mockImplementation(async () => {
+      expect(encoding).toBe(false);
+      encoding = true;
+      await Promise.resolve();
+      encoding = false;
+    });
+
+    const result = await exportPlayerVideo({
+      card,
+      range,
+      audio: createAudioBuffer(),
+      volume: 1,
+      onFrame: vi.fn(() => Promise.resolve()),
+    });
+
+    expect(videoSource.add).toHaveBeenCalledTimes(30);
+    expect(videoSource.add).toHaveBeenNthCalledWith(1, 0, 1 / 30);
+    const lastFrame = videoSource.add.mock.calls[29];
+    expect(lastFrame[0]).toBeCloseTo(29 / 30);
+    expect(lastFrame[1]).toBeCloseTo(1 / 30);
+    expect(audioSource.add).toHaveBeenCalledOnce();
+    expect(output.finalize).toHaveBeenCalledOnce();
+    expect(output.cancel).not.toHaveBeenCalled();
+    expect(result).toBeInstanceOf(Blob);
+    expect(result.type).toBe('video/mp4');
+  });
+
+  it('フレーム取得中に中断されると後続のフレームを追加せず出力を取り消す', async () => {
+    const card = prepareExport();
+    const controller = new AbortController();
+    capture.toCanvas.mockImplementation(async () => {
+      controller.abort();
+      return document.createElement('canvas');
+    });
+
+    await expect(exportPlayerVideo({
+      card,
+      range,
+      audio: createAudioBuffer(),
+      volume: 1,
+      onFrame: vi.fn(() => Promise.resolve()),
+      signal: controller.signal,
+    })).rejects.toThrow('動画の生成をキャンセルしました。');
+
+    expect(videoSource.add).not.toHaveBeenCalled();
+    expect(output.cancel).toHaveBeenCalledOnce();
+  });
+
+  it('コーデック非対応なら出力開始前に日本語メッセージで拒否する', async () => {
+    const card = prepareExport();
+    mediabunny.canEncodeVideo.mockResolvedValue(false);
+
+    await expect(exportPlayerVideo({
+      card,
+      range,
+      audio: createAudioBuffer(),
+      volume: 1,
+      onFrame: vi.fn(() => Promise.resolve()),
+    })).rejects.toThrow('H.264 映像エンコーダーに対応していないブラウザです。');
+
+    expect(mediabunny.Output).not.toHaveBeenCalled();
+  });
+
+  it('通常のフレーム生成失敗でも出力を取り消す', async () => {
+    const card = prepareExport();
+    capture.toCanvas.mockRejectedValue(new Error('capture failed'));
+
+    await expect(exportPlayerVideo({
+      card,
+      range,
+      audio: createAudioBuffer(),
+      volume: 1,
+      onFrame: vi.fn(() => Promise.resolve()),
+    })).rejects.toThrow('capture failed');
+
+    expect(output.cancel).toHaveBeenCalledOnce();
   });
 });

@@ -6,6 +6,7 @@ import {
   Mp4OutputFormat,
   Output,
 } from 'mediabunny';
+import { detectVideoCapabilities } from './video-capabilities';
 import { calculateVideoOutputHeight } from './video-timeline';
 import type { PlayerFrameState, VideoClipRange } from './video-types';
 
@@ -101,8 +102,12 @@ export async function exportPlayerVideo(options: VideoExportOptions): Promise<Bl
   assertNotAborted(options.signal);
 
   const { width, height } = getOutputSize(options.card);
+  const capabilities = await detectVideoCapabilities(width, height);
+  if (!capabilities.supported) throw new Error(capabilities.message);
+
   const target = new BufferTarget();
   const output = new Output({ format: new Mp4OutputFormat(), target });
+  let completed = false;
 
   try {
     const frameCount = Math.ceil(options.range.duration * FRAME_RATE);
@@ -128,6 +133,7 @@ export async function exportPlayerVideo(options: VideoExportOptions): Promise<Bl
       assertNotAborted(options.signal);
 
       const frame = await toCanvas(options.card, { canvasWidth: width, canvasHeight: height });
+      assertNotAborted(options.signal);
       copyCanvasFrame(encodingCanvas, frame, width, height);
       const timestamp = frameIndex / FRAME_RATE;
       await videoSource.add(timestamp, Math.min(1 / FRAME_RATE, options.range.duration - timestamp));
@@ -142,11 +148,16 @@ export async function exportPlayerVideo(options: VideoExportOptions): Promise<Bl
 
     if (!target.buffer) throw new Error('MP4 データを作成できませんでした。');
     options.onProgress?.('completed', 1);
-    return new Blob([target.buffer], { type: 'video/mp4' });
-  } catch (error) {
-    if (options.signal?.aborted) {
-      await output.cancel();
+    const blob = new Blob([target.buffer], { type: 'video/mp4' });
+    completed = true;
+    return blob;
+  } finally {
+    if (!completed) {
+      try {
+        await output.cancel();
+      } catch {
+        // 出力中の元の失敗をcancelの失敗で置き換えない
+      }
     }
-    throw error;
   }
 }
