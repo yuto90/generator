@@ -74,7 +74,7 @@ function MusicPlayerCard({
   } as CSSProperties;
 
   return (
-    <div className="player-card" id={interactive ? 'player-card' : undefined} ref={cardRef} style={cardStyle}>
+    <div className={`player-card${interactive ? '' : ' video-export-frame'}`} id={interactive ? 'player-card' : undefined} ref={cardRef} style={cardStyle}>
       <div className="relative mb-3 aspect-square w-full overflow-hidden rounded-2xl" style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
         <div
           id={interactive ? 'cover-img' : undefined}
@@ -180,6 +180,9 @@ export default function MusicPlayerApp() {
   const exportCardRef = useRef<HTMLDivElement | null>(null);
   const { capture } = useCapture();
   const localAudio = useLocalAudio();
+  const exportingRef = useRef(false);
+  const exportWasPlayingRef = useRef(false);
+  const [videoExporting, setVideoExporting] = useState(false);
 
   const yt = useYouTubePlayer({
     width: '1',
@@ -201,7 +204,7 @@ export default function MusicPlayerApp() {
   });
 
   useEffect(() => {
-    if (!localAudio.file) return;
+    if (!localAudio.file || exportingRef.current) return;
     setFrameState({
       currentTime: localAudio.currentTime,
       duration: localAudio.duration,
@@ -212,6 +215,7 @@ export default function MusicPlayerApp() {
   }, [localAudio.currentTime, localAudio.duration, localAudio.file, localAudio.playing, localAudio.volume]);
 
   function applyPreview(nextColors = colors) {
+    if (exportingRef.current) return;
     const youtubeId = extractYouTubeId(youtube);
     setApplied({
       title: title || '曲のタイトル',
@@ -238,6 +242,7 @@ export default function MusicPlayerApp() {
   }, [theme]);
 
   function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
+    if (exportingRef.current) return;
     const file = event.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
@@ -246,6 +251,7 @@ export default function MusicPlayerApp() {
   }
 
   function handlePlayToggle() {
+    if (exportingRef.current) return;
     if (localAudio.file) {
       yt.stop();
       if (localAudio.playing) localAudio.pause();
@@ -261,6 +267,7 @@ export default function MusicPlayerApp() {
   }
 
   function handleSeek(seconds: number) {
+    if (exportingRef.current) return;
     const duration = localAudio.file ? localAudio.duration : yt.getDuration();
     const safeSeconds = Math.min(Math.max(seconds, 0), duration || Number.POSITIVE_INFINITY);
     if (localAudio.file) localAudio.seek(safeSeconds);
@@ -274,6 +281,7 @@ export default function MusicPlayerApp() {
   }
 
   function handleVolumeChange(volume: number) {
+    if (exportingRef.current) return;
     const safeVolume = Math.min(Math.max(volume, 0), 1);
     if (localAudio.file) localAudio.setVolume(safeVolume);
     else yt.setVolume(safeVolume * 100);
@@ -281,6 +289,7 @@ export default function MusicPlayerApp() {
   }
 
   function handleAudioFileChange(file: File | null) {
+    if (exportingRef.current) return;
     if (!file) {
       localAudio.clear();
       return;
@@ -307,12 +316,35 @@ export default function MusicPlayerApp() {
     });
   }
 
+  function handleExportStart() {
+    exportingRef.current = true;
+    exportWasPlayingRef.current = localAudio.playing;
+    setVideoExporting(true);
+    if (localAudio.playing) localAudio.pause();
+    setFrameState((current) => ({ ...current, playing: false }));
+  }
+
+  function handleExportEnd() {
+    const shouldResume = exportWasPlayingRef.current;
+    exportingRef.current = false;
+    setVideoExporting(false);
+    setFrameState((current) => ({
+      ...current,
+      currentTime: localAudio.currentTime,
+      duration: localAudio.duration,
+      progress: localAudio.duration > 0 ? localAudio.currentTime / localAudio.duration : 0,
+      playing: shouldResume,
+      volume: localAudio.volume,
+    }));
+    if (shouldResume) void localAudio.play();
+  }
+
   return (
     <div className="app-music">
       <div id="youtube-audio" className="pointer-events-none fixed -left-0.5 -top-0.5 h-px w-px overflow-hidden" ref={yt.containerRef} />
 
       <div className="maker-layout relative flex min-h-screen w-full max-w-[1500px] mx-auto items-center justify-center pr-[340px] max-md:flex-col max-md:px-4 max-md:py-6 max-md:gap-4 max-md:min-h-0 max-md:justify-start">
-        <div id="capture-area" className="flex w-full justify-center max-md:w-auto">
+        <div id="capture-area" className={`flex w-full justify-center max-md:w-auto${videoExporting ? ' video-export-lock' : ''}`}>
           <MusicPlayerCard
             applied={applied}
             frameState={frameState}
@@ -333,33 +365,33 @@ export default function MusicPlayerApp() {
               <div className="w-1.5 h-1.5 rounded-full bg-[#7c6af0]" />
               <h2 className="panel-title text-sm font-semibold tracking-wide uppercase">Music Player</h2>
             </div>
-            <ThemeToggle className="theme-toggle" />
+            <ThemeToggle className="theme-toggle" disabled={videoExporting} />
           </div>
 
           <div className="flex flex-col gap-4">
-            <div><label className="field-label" htmlFor="in-title">Title</label><input className="field-input" type="text" id="in-title" placeholder="タイトルまたはキャッチフレーズ" value={title} onChange={(event) => setTitle(event.target.value)} /></div>
-            <div><label className="field-label" htmlFor="in-artist">Artist</label><input className="field-input" type="text" id="in-artist" placeholder="アーティスト名" value={artist} onChange={(event) => setArtist(event.target.value)} /></div>
-            <div><label className="field-label" htmlFor="in-image">Cover Image</label><input className="file-input" type="file" id="in-image" accept="image/*" onChange={handleImageChange} /></div>
+            <div><label className="field-label" htmlFor="in-title">Title</label><input className="field-input" type="text" id="in-title" placeholder="タイトルまたはキャッチフレーズ" value={title} disabled={videoExporting} onChange={(event) => setTitle(event.target.value)} /></div>
+            <div><label className="field-label" htmlFor="in-artist">Artist</label><input className="field-input" type="text" id="in-artist" placeholder="アーティスト名" value={artist} disabled={videoExporting} onChange={(event) => setArtist(event.target.value)} /></div>
+            <div><label className="field-label" htmlFor="in-image">Cover Image</label><input className="file-input" type="file" id="in-image" accept="image/*" disabled={videoExporting} onChange={handleImageChange} /></div>
             <div>
               <label className="field-label" htmlFor="in-youtube">YouTube URL</label>
-              <input className="field-input" type="text" id="in-youtube" placeholder="例: https://www.youtube.com/watch?v=w2-uvGZCe3g" value={youtube} onChange={(event) => setYoutube(event.target.value)} />
+              <input className="field-input" type="text" id="in-youtube" placeholder="例: https://www.youtube.com/watch?v=w2-uvGZCe3g" value={youtube} disabled={videoExporting} onChange={(event) => setYoutube(event.target.value)} />
               <p className="help-text text-[11px] mt-1.5">動画の URL を貼り付けてください</p>
             </div>
-            <div><label className="field-label" htmlFor="in-copyright">Copyright</label><input className="field-input" type="text" id="in-copyright" placeholder="ⓒ 依頼主" value={copyright} onChange={(event) => setCopyright(event.target.value)} /></div>
+            <div><label className="field-label" htmlFor="in-copyright">Copyright</label><input className="field-input" type="text" id="in-copyright" placeholder="ⓒ 依頼主" value={copyright} disabled={videoExporting} onChange={(event) => setCopyright(event.target.value)} /></div>
           </div>
 
           <hr className="divider" />
 
           <div className="flex gap-3">
-            <div className="flex-1"><label className="field-label" htmlFor="in-bg-color">BG</label><div className="color-picker-wrap"><input type="color" id="in-bg-color" value={colors.bgColor} onChange={(event) => setColors({ ...colors, bgColor: event.target.value })} /></div></div>
-            <div className="flex-1"><label className="field-label" htmlFor="in-point-color">Accent</label><div className="color-picker-wrap"><input type="color" id="in-point-color" value={colors.pointColor} onChange={(event) => setColors({ ...colors, pointColor: event.target.value })} /></div></div>
-            <div className="flex-1"><label className="field-label" htmlFor="in-text-color">Text</label><div className="color-picker-wrap"><input type="color" id="in-text-color" value={colors.textColor} onChange={(event) => setColors({ ...colors, textColor: event.target.value })} /></div></div>
+            <div className="flex-1"><label className="field-label" htmlFor="in-bg-color">BG</label><div className="color-picker-wrap"><input type="color" id="in-bg-color" value={colors.bgColor} disabled={videoExporting} onChange={(event) => setColors({ ...colors, bgColor: event.target.value })} /></div></div>
+            <div className="flex-1"><label className="field-label" htmlFor="in-point-color">Accent</label><div className="color-picker-wrap"><input type="color" id="in-point-color" value={colors.pointColor} disabled={videoExporting} onChange={(event) => setColors({ ...colors, pointColor: event.target.value })} /></div></div>
+            <div className="flex-1"><label className="field-label" htmlFor="in-text-color">Text</label><div className="color-picker-wrap"><input type="color" id="in-text-color" value={colors.textColor} disabled={videoExporting} onChange={(event) => setColors({ ...colors, textColor: event.target.value })} /></div></div>
           </div>
 
           <hr className="divider" />
 
           <div className="flex flex-col gap-2.5">
-            <button className="btn-primary btn-apply" id="btn-update" type="button" onClick={() => applyPreview()}>適用してプレビュー</button>
+            <button className="btn-primary btn-apply" id="btn-update" type="button" disabled={videoExporting} onClick={() => applyPreview()}>適用してプレビュー</button>
           </div>
           <VideoExportPanel
             appId="music-player"
@@ -374,6 +406,16 @@ export default function MusicPlayerApp() {
             volume={frameState.volume}
             onVolumeChange={handleVolumeChange}
             onImageSave={handleCapture}
+            onExportStart={handleExportStart}
+            onExportEnd={handleExportEnd}
+            onPreviewStart={(range) => {
+              if (exportingRef.current) return;
+              handleSeek(range.start);
+              void localAudio.play();
+            }}
+            onPreviewStop={() => {
+              if (!exportingRef.current) localAudio.pause();
+            }}
           />
         </div>
       </div>

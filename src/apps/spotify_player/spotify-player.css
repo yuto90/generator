@@ -88,6 +88,18 @@
   pointer-events: none;
 }
 
+.app-spotify .video-export-card,
+.app-spotify .video-export-card *,
+.app-spotify .video-export-frame,
+.app-spotify .video-export-frame * {
+  transition: none !important;
+  animation: none !important;
+}
+
+.app-spotify .video-export-lock {
+  pointer-events: none;
+}
+
 :root[data-theme='light'] .app-spotify .spotify-card {
   border-color: rgba(25, 20, 20, 0.08);
 }

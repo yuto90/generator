@@ -4,9 +4,13 @@ import userEvent from '@testing-library/user-event';
 import type { RefObject } from 'react';
 import type { LocalAudioState, PlayerFrameState } from './video-types';
 
-const exporter = vi.hoisted(() => ({ exportPlayerVideo: vi.fn() }));
+const exporter = vi.hoisted(() => ({
+  exportPlayerVideo: vi.fn(),
+}));
+const capability = vi.hoisted(() => ({ detectVideoCapabilities: vi.fn(async () => ({ supported: true, video: true, audio: true, message: '' })) }));
 
 vi.mock('./video-exporter', () => exporter);
+vi.mock('./video-capabilities', () => capability);
 
 import { VideoExportPanel } from './VideoExportPanel';
 

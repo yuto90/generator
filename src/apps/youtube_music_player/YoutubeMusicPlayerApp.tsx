@@ -74,7 +74,7 @@ function YoutubeMusicPlayerCard({ applied, frameState, cardRef, interactive = fa
   const progress = Math.min(Math.max(frameState.progress * 100, 0), 100);
   const volume = Math.min(Math.max(frameState.volume * 100, 0), 100);
   const cardStyle = { background: `linear-gradient(180deg, ${shadeColor(applied.bgColor, 9)} 0%, ${applied.bgColor} 55%)`, color: applied.textColor, '--player-point': applied.pointColor, '--player-text': applied.textColor } as CSSProperties;
-  return <div className="ym-card" id={interactive ? 'player-card' : undefined} ref={cardRef} style={cardStyle}>
+  return <div className={`ym-card${interactive ? '' : ' video-export-frame'}`} id={interactive ? 'player-card' : undefined} ref={cardRef} style={cardStyle}>
     <div className="ym-topbar"><button className="ctrl-btn" type="button" aria-label="閉じる"><svg viewBox="0 0 24 24" fill="none"><path d="M5 9l7 7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg></button><span className="text-[11px] font-medium tracking-[0.12em] uppercase opacity-60">再生中</span><button className="ctrl-btn" type="button" aria-label="その他"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="12" cy="19" r="1.8" /></svg></button></div>
     <div id={interactive ? 'cover-img' : undefined} className="ym-artwork" style={{ backgroundImage: `url('${applied.cover}')` }} />
     <div className="flex items-center gap-3 mb-4"><div className="flex-1 min-w-0"><div className="ym-title" id={interactive ? 'song-title' : undefined}>{applied.title}</div><div className="ym-artist" id={interactive ? 'song-artist' : undefined}>{applied.artist}</div></div><button className="ctrl-btn ym-sub-btn w-5 h-5 shrink-0" type="button" aria-label="低評価"><svg viewBox="0 0 24 24"><path d="M15 3H6.5A2.5 2.5 0 0 0 4 5.5l-1.4 7A2.5 2.5 0 0 0 5.05 15H10l-.7 4.2A1.8 1.8 0 0 0 11.08 21c.5 0 .96-.26 1.22-.68L16 14.5V3h-1z" /><path d="M18 3h3v11h-3z" /></svg></button><button className="ctrl-btn ym-sub-btn w-5 h-5 shrink-0" type="button" aria-label="高評価"><svg viewBox="0 0 24 24"><path d="M9 21h8.5a2.5 2.5 0 0 0 2.5-2.5l1.4-7A2.5 2.5 0 0 0 18.95 9H14l.7-4.2A1.8 1.8 0 0 0 12.92 3c-.5 0-.96.26-1.22.68L8 9.5V21h1z" /><path d="M3 10h3v11H3z" /></svg></button></div>
@@ -111,6 +111,9 @@ export default function YoutubeMusicPlayerApp() {
   const exportCardRef = useRef<HTMLDivElement | null>(null);
   const { capture } = useCapture();
   const localAudio = useLocalAudio();
+  const exportingRef = useRef(false);
+  const exportWasPlayingRef = useRef(false);
+  const [videoExporting, setVideoExporting] = useState(false);
 
   const yt = useYouTubePlayer({
     width: '1',
@@ -132,11 +135,12 @@ export default function YoutubeMusicPlayerApp() {
   });
 
   useEffect(() => {
-    if (!localAudio.file) return;
+    if (!localAudio.file || exportingRef.current) return;
     setFrameState({ currentTime: localAudio.currentTime, duration: localAudio.duration, progress: localAudio.duration > 0 ? localAudio.currentTime / localAudio.duration : 0, playing: localAudio.playing, volume: localAudio.volume });
   }, [localAudio.currentTime, localAudio.duration, localAudio.file, localAudio.playing, localAudio.volume]);
 
   function applyPreview(nextColors = colors) {
+    if (exportingRef.current) return;
     const youtubeId = extractYouTubeId(youtube);
     setApplied({
       title: title || '曲のタイトル',
@@ -164,6 +168,7 @@ export default function YoutubeMusicPlayerApp() {
   }, [theme]);
 
   function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
+    if (exportingRef.current) return;
     const file = event.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
@@ -172,6 +177,7 @@ export default function YoutubeMusicPlayerApp() {
   }
 
   function handlePlayClick() {
+    if (exportingRef.current) return;
     if (localAudio.file) {
       yt.stop();
       if (localAudio.playing) localAudio.pause(); else void localAudio.play();
@@ -185,6 +191,7 @@ export default function YoutubeMusicPlayerApp() {
   }
 
   function handleSeekPercent(percent: number) {
+    if (exportingRef.current) return;
     const duration = localAudio.file ? localAudio.duration : yt.getDuration();
     const currentTime = duration > 0 ? duration * percent / 100 : 0;
     if (localAudio.file) localAudio.seek(currentTime); else yt.seekTo(currentTime);
@@ -192,12 +199,14 @@ export default function YoutubeMusicPlayerApp() {
   }
 
   function handleVolumeChange(volume: number) {
+    if (exportingRef.current) return;
     const safeVolume = Math.min(Math.max(volume, 0), 1);
     if (localAudio.file) localAudio.setVolume(safeVolume); else yt.setVolume(safeVolume * 100);
     setFrameState((current) => ({ ...current, volume: safeVolume }));
   }
 
   function handleAudioFileChange(file: File | null) {
+    if (exportingRef.current) return;
     if (!file) { localAudio.clear(); return; }
     yt.stop();
     localAudio.pause();
@@ -218,6 +227,29 @@ export default function YoutubeMusicPlayerApp() {
     return new Promise((resolve) => { setFrameState(nextFrame); requestAnimationFrame(() => resolve()); });
   }
 
+  function handleExportStart() {
+    exportingRef.current = true;
+    exportWasPlayingRef.current = localAudio.playing;
+    setVideoExporting(true);
+    if (localAudio.playing) localAudio.pause();
+    setFrameState((current) => ({ ...current, playing: false }));
+  }
+
+  function handleExportEnd() {
+    const shouldResume = exportWasPlayingRef.current;
+    exportingRef.current = false;
+    setVideoExporting(false);
+    setFrameState((current) => ({
+      ...current,
+      currentTime: localAudio.currentTime,
+      duration: localAudio.duration,
+      progress: localAudio.duration > 0 ? localAudio.currentTime / localAudio.duration : 0,
+      playing: shouldResume,
+      volume: localAudio.volume,
+    }));
+    if (shouldResume) void localAudio.play();
+  }
+
   return (
     <div className="app-ytmusic">
       <div
@@ -228,7 +260,7 @@ export default function YoutubeMusicPlayerApp() {
 
       <div className="maker-layout relative flex min-h-screen w-full max-w-[1500px] mx-auto items-center justify-center pr-[340px] max-md:flex-col max-md:px-4 max-md:py-6 max-md:gap-4 max-md:min-h-0 max-md:justify-start">
 
-        <div id="capture-area" className="flex w-full justify-center max-md:w-auto"><YoutubeMusicPlayerCard applied={applied} frameState={frameState} cardRef={cardRef} interactive onPlayToggle={handlePlayClick} onSeekPercent={handleSeekPercent} onVolumeChange={handleVolumeChange} /></div>
+        <div id="capture-area" className={`flex w-full justify-center max-md:w-auto${videoExporting ? ' video-export-lock' : ''}`}><YoutubeMusicPlayerCard applied={applied} frameState={frameState} cardRef={cardRef} interactive onPlayToggle={handlePlayClick} onSeekPercent={handleSeekPercent} onVolumeChange={handleVolumeChange} /></div>
         <div className="video-export-card" aria-hidden="true"><YoutubeMusicPlayerCard applied={applied} frameState={frameState} cardRef={exportCardRef} /></div>
 
         {/* ---- Right panel (controls) ---- */}
@@ -238,30 +270,30 @@ export default function YoutubeMusicPlayerApp() {
               <div className="w-1.5 h-1.5 rounded-full bg-[#ff0000]" />
               <h2 className="panel-title text-sm font-semibold tracking-wide uppercase">YouTube Music</h2>
             </div>
-            <ThemeToggle className="theme-toggle" />
+            <ThemeToggle className="theme-toggle" disabled={videoExporting} />
           </div>
 
           <div className="flex flex-col gap-4">
             <div>
               <label className="field-label" htmlFor="in-title">Title</label>
-              <input className="field-input" type="text" id="in-title" placeholder="タイトルまたはキャッチフレーズ" value={title} onChange={e => setTitle(e.target.value)} />
+              <input className="field-input" type="text" id="in-title" placeholder="タイトルまたはキャッチフレーズ" value={title} disabled={videoExporting} onChange={e => setTitle(e.target.value)} />
             </div>
             <div>
               <label className="field-label" htmlFor="in-artist">Artist</label>
-              <input className="field-input" type="text" id="in-artist" placeholder="アーティスト名" value={artist} onChange={e => setArtist(e.target.value)} />
+              <input className="field-input" type="text" id="in-artist" placeholder="アーティスト名" value={artist} disabled={videoExporting} onChange={e => setArtist(e.target.value)} />
             </div>
             <div>
               <label className="field-label" htmlFor="in-image">Cover Image</label>
-              <input className="file-input" type="file" id="in-image" accept="image/*" onChange={handleImageChange} />
+              <input className="file-input" type="file" id="in-image" accept="image/*" disabled={videoExporting} onChange={handleImageChange} />
             </div>
             <div>
               <label className="field-label" htmlFor="in-youtube">YouTube URL</label>
-              <input className="field-input" type="text" id="in-youtube" placeholder="例: https://www.youtube.com/watch?v=w2-uvGZCe3g" value={youtube} onChange={e => setYoutube(e.target.value)} />
+              <input className="field-input" type="text" id="in-youtube" placeholder="例: https://www.youtube.com/watch?v=w2-uvGZCe3g" value={youtube} disabled={videoExporting} onChange={e => setYoutube(e.target.value)} />
               <p className="help-text text-[11px] mt-1.5">動画の URL を貼り付けてください</p>
             </div>
             <div>
               <label className="field-label" htmlFor="in-copyright">Copyright</label>
-              <input className="field-input" type="text" id="in-copyright" placeholder="ⓒ 依頼主" value={copyright} onChange={e => setCopyright(e.target.value)} />
+              <input className="field-input" type="text" id="in-copyright" placeholder="ⓒ 依頼主" value={copyright} disabled={videoExporting} onChange={e => setCopyright(e.target.value)} />
             </div>
           </div>
 
@@ -272,19 +304,19 @@ export default function YoutubeMusicPlayerApp() {
             <div className="flex-1">
               <label className="field-label" htmlFor="in-bg-color">BG</label>
               <div className="color-picker-wrap">
-                <input type="color" id="in-bg-color" value={colors.bgColor} onChange={e => setColors({ ...colors, bgColor: e.target.value })} />
+                <input type="color" id="in-bg-color" value={colors.bgColor} disabled={videoExporting} onChange={e => setColors({ ...colors, bgColor: e.target.value })} />
               </div>
             </div>
             <div className="flex-1">
               <label className="field-label" htmlFor="in-point-color">Accent</label>
               <div className="color-picker-wrap">
-                <input type="color" id="in-point-color" value={colors.pointColor} onChange={e => setColors({ ...colors, pointColor: e.target.value })} />
+                <input type="color" id="in-point-color" value={colors.pointColor} disabled={videoExporting} onChange={e => setColors({ ...colors, pointColor: e.target.value })} />
               </div>
             </div>
             <div className="flex-1">
               <label className="field-label" htmlFor="in-text-color">Text</label>
               <div className="color-picker-wrap">
-                <input type="color" id="in-text-color" value={colors.textColor} onChange={e => setColors({ ...colors, textColor: e.target.value })} />
+                <input type="color" id="in-text-color" value={colors.textColor} disabled={videoExporting} onChange={e => setColors({ ...colors, textColor: e.target.value })} />
               </div>
             </div>
           </div>
@@ -292,9 +324,9 @@ export default function YoutubeMusicPlayerApp() {
           <hr className="divider" />
 
           <div className="flex flex-col gap-2.5">
-            <button className="btn-primary btn-apply" id="btn-update" type="button" onClick={() => applyPreview()}>適用してプレビュー</button>
+            <button className="btn-primary btn-apply" id="btn-update" type="button" disabled={videoExporting} onClick={() => applyPreview()}>適用してプレビュー</button>
           </div>
-          <VideoExportPanel appId="youtube-music-player" exportCardRef={exportCardRef} audio={localAudio} onAudioFileChange={handleAudioFileChange} frameState={frameState} duration={frameState.duration} currentTime={frameState.currentTime} onSeek={(seconds) => handleSeekPercent(frameState.duration > 0 ? seconds / frameState.duration * 100 : 0)} onFrame={handleVideoFrame} volume={frameState.volume} onVolumeChange={handleVolumeChange} onImageSave={handleCapture} />
+          <VideoExportPanel appId="youtube-music-player" exportCardRef={exportCardRef} audio={localAudio} onAudioFileChange={handleAudioFileChange} frameState={frameState} duration={frameState.duration} currentTime={frameState.currentTime} onSeek={(seconds) => handleSeekPercent(frameState.duration > 0 ? seconds / frameState.duration * 100 : 0)} onFrame={handleVideoFrame} volume={frameState.volume} onVolumeChange={handleVolumeChange} onImageSave={handleCapture} onExportStart={handleExportStart} onExportEnd={handleExportEnd} onPreviewStart={(range) => { if (exportingRef.current) return; localAudio.seek(range.start); void localAudio.play(); }} onPreviewStop={() => { if (!exportingRef.current) localAudio.pause(); }} />
         </div>
 
       </div>

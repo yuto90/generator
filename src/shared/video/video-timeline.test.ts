@@ -81,6 +81,11 @@ describe('getVideoFrameTime', () => {
 
 describe('calculateVideoOutputHeight', () => {
   it('CSS上の縦横比を出力幅へ適用する', () => {
-    expect(calculateVideoOutputHeight(375, 667, 1080)).toBe(1921);
+    expect(calculateVideoOutputHeight(375, 667, 1080)).toBe(1920);
+  });
+
+  it('奇数の高さは最も近い偶数へ丸める', () => {
+    expect(calculateVideoOutputHeight(100, 101, 100)).toBe(102);
+    expect(calculateVideoOutputHeight(100, 99, 100)).toBe(100);
   });
 });

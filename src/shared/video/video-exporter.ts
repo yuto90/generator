@@ -10,7 +10,7 @@ import { detectVideoCapabilities } from './video-capabilities';
 import { calculateVideoOutputHeight } from './video-timeline';
 import type { PlayerFrameState, VideoClipRange } from './video-types';
 
-export type VideoExportPhase = 'idle' | 'preparing' | 'rendering' | 'muxing' | 'completed' | 'failed' | 'cancelled';
+export type VideoExportPhase = 'idle' | 'preparing' | 'rendering' | 'audio' | 'muxing' | 'completed' | 'failed' | 'cancelled';
 
 export interface VideoExportOptions {
   card: HTMLElement;
@@ -126,6 +126,8 @@ export async function exportPlayerVideo(options: VideoExportOptions): Promise<Bl
     output.addVideoTrack(videoSource);
     output.addAudioTrack(audioSource);
     await output.start();
+    await document.fonts?.ready;
+    assertNotAborted(options.signal);
 
     for (let frameIndex = 0; frameIndex < frameCount; frameIndex += 1) {
       assertNotAborted(options.signal);
@@ -142,7 +144,9 @@ export async function exportPlayerVideo(options: VideoExportOptions): Promise<Bl
 
     assertNotAborted(options.signal);
     options.onProgress?.('muxing', 0);
+    options.onProgress?.('audio', 0);
     await audioSource.add(audio);
+    options.onProgress?.('audio', 1);
     await output.finalize();
     assertNotAborted(options.signal);
 

@@ -80,7 +80,7 @@ function AppleMusicPlayerCard({ applied, frameState, cardRef, interactive = fals
     '--player-text': applied.textColor,
   } as CSSProperties;
 
-  return <div className="am-card" id={interactive ? 'player-card' : undefined} ref={cardRef} style={cardStyle}>
+  return <div className={`am-card${interactive ? '' : ' video-export-frame'}`} id={interactive ? 'player-card' : undefined} ref={cardRef} style={cardStyle}>
     <div className="am-grabber" />
     <div className="am-artwork-wrap"><div id={interactive ? 'cover-img' : undefined} className={frameState.playing ? 'am-artwork playing' : 'am-artwork'} style={{ backgroundImage: `url('${applied.cover}')` }} /></div>
     <div className="flex items-center gap-3 mb-3"><div className="flex-1 min-w-0"><div className="am-title" id={interactive ? 'song-title' : undefined}>{applied.title}</div><div className="am-artist" id={interactive ? 'song-artist' : undefined}>{applied.artist}</div></div><button className="am-more-btn" type="button" aria-label="その他">…</button></div>
@@ -118,6 +118,9 @@ export default function AppleMusicPlayerApp() {
   const exportCardRef = useRef<HTMLDivElement | null>(null);
   const { capture } = useCapture();
   const localAudio = useLocalAudio();
+  const exportingRef = useRef(false);
+  const exportWasPlayingRef = useRef(false);
+  const [videoExporting, setVideoExporting] = useState(false);
 
   const yt = useYouTubePlayer({
     width: '1',
@@ -139,11 +142,12 @@ export default function AppleMusicPlayerApp() {
   });
 
   useEffect(() => {
-    if (!localAudio.file) return;
+    if (!localAudio.file || exportingRef.current) return;
     setFrameState({ currentTime: localAudio.currentTime, duration: localAudio.duration, progress: localAudio.duration > 0 ? localAudio.currentTime / localAudio.duration : 0, playing: localAudio.playing, volume: localAudio.volume });
   }, [localAudio.currentTime, localAudio.duration, localAudio.file, localAudio.playing, localAudio.volume]);
 
   function applyPreview(nextColors = colors) {
+    if (exportingRef.current) return;
     const youtubeId = extractYouTubeId(youtube);
     setApplied({
       title: title || '曲のタイトル',
@@ -171,6 +175,7 @@ export default function AppleMusicPlayerApp() {
   }, [theme]);
 
   function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
+    if (exportingRef.current) return;
     const file = event.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
@@ -179,6 +184,7 @@ export default function AppleMusicPlayerApp() {
   }
 
   function handlePlayClick() {
+    if (exportingRef.current) return;
     if (localAudio.file) {
       yt.stop();
       if (localAudio.playing) localAudio.pause(); else void localAudio.play();
@@ -192,6 +198,7 @@ export default function AppleMusicPlayerApp() {
   }
 
   function handleSeekPercent(percent: number) {
+    if (exportingRef.current) return;
     const duration = localAudio.file ? localAudio.duration : yt.getDuration();
     const currentTime = duration > 0 ? duration * percent / 100 : 0;
     if (localAudio.file) localAudio.seek(currentTime); else yt.seekTo(currentTime);
@@ -199,12 +206,14 @@ export default function AppleMusicPlayerApp() {
   }
 
   function handleVolumeChange(volume: number) {
+    if (exportingRef.current) return;
     const safeVolume = Math.min(Math.max(volume, 0), 1);
     if (localAudio.file) localAudio.setVolume(safeVolume); else yt.setVolume(safeVolume * 100);
     setFrameState((current) => ({ ...current, volume: safeVolume }));
   }
 
   function handleAudioFileChange(file: File | null) {
+    if (exportingRef.current) return;
     if (!file) { localAudio.clear(); return; }
     yt.stop();
     localAudio.pause();
@@ -225,6 +234,29 @@ export default function AppleMusicPlayerApp() {
     return new Promise((resolve) => { setFrameState(nextFrame); requestAnimationFrame(() => resolve()); });
   }
 
+  function handleExportStart() {
+    exportingRef.current = true;
+    exportWasPlayingRef.current = localAudio.playing;
+    setVideoExporting(true);
+    if (localAudio.playing) localAudio.pause();
+    setFrameState((current) => ({ ...current, playing: false }));
+  }
+
+  function handleExportEnd() {
+    const shouldResume = exportWasPlayingRef.current;
+    exportingRef.current = false;
+    setVideoExporting(false);
+    setFrameState((current) => ({
+      ...current,
+      currentTime: localAudio.currentTime,
+      duration: localAudio.duration,
+      progress: localAudio.duration > 0 ? localAudio.currentTime / localAudio.duration : 0,
+      playing: shouldResume,
+      volume: localAudio.volume,
+    }));
+    if (shouldResume) void localAudio.play();
+  }
+
   return (
     <div className="app-apple">
       <div
@@ -235,7 +267,7 @@ export default function AppleMusicPlayerApp() {
 
       <div className="maker-layout relative flex min-h-screen w-full max-w-[1500px] mx-auto items-center justify-center pr-[340px] max-md:flex-col max-md:px-4 max-md:py-6 max-md:gap-4 max-md:min-h-0 max-md:justify-start">
 
-        <div id="capture-area" className="flex w-full justify-center max-md:w-auto"><AppleMusicPlayerCard applied={applied} frameState={frameState} cardRef={cardRef} interactive onPlayToggle={handlePlayClick} onSeekPercent={handleSeekPercent} onVolumeChange={handleVolumeChange} /></div>
+        <div id="capture-area" className={`flex w-full justify-center max-md:w-auto${videoExporting ? ' video-export-lock' : ''}`}><AppleMusicPlayerCard applied={applied} frameState={frameState} cardRef={cardRef} interactive onPlayToggle={handlePlayClick} onSeekPercent={handleSeekPercent} onVolumeChange={handleVolumeChange} /></div>
         <div className="video-export-card" aria-hidden="true"><AppleMusicPlayerCard applied={applied} frameState={frameState} cardRef={exportCardRef} /></div>
 
         {/* ---- Right panel (controls) ---- */}
@@ -245,30 +277,30 @@ export default function AppleMusicPlayerApp() {
               <div className="w-1.5 h-1.5 rounded-full bg-[#fa2d48]" />
               <h2 className="panel-title text-sm font-semibold tracking-wide uppercase">Apple Music</h2>
             </div>
-            <ThemeToggle className="theme-toggle" />
+            <ThemeToggle className="theme-toggle" disabled={videoExporting} />
           </div>
 
           <div className="flex flex-col gap-4">
             <div>
               <label className="field-label" htmlFor="in-title">Title</label>
-              <input className="field-input" type="text" id="in-title" placeholder="タイトルまたはキャッチフレーズ" value={title} onChange={e => setTitle(e.target.value)} />
+              <input className="field-input" type="text" id="in-title" placeholder="タイトルまたはキャッチフレーズ" value={title} disabled={videoExporting} onChange={e => setTitle(e.target.value)} />
             </div>
             <div>
               <label className="field-label" htmlFor="in-artist">Artist</label>
-              <input className="field-input" type="text" id="in-artist" placeholder="アーティスト名" value={artist} onChange={e => setArtist(e.target.value)} />
+              <input className="field-input" type="text" id="in-artist" placeholder="アーティスト名" value={artist} disabled={videoExporting} onChange={e => setArtist(e.target.value)} />
             </div>
             <div>
               <label className="field-label" htmlFor="in-image">Cover Image</label>
-              <input className="file-input" type="file" id="in-image" accept="image/*" onChange={handleImageChange} />
+              <input className="file-input" type="file" id="in-image" accept="image/*" disabled={videoExporting} onChange={handleImageChange} />
             </div>
             <div>
               <label className="field-label" htmlFor="in-youtube">YouTube URL</label>
-              <input className="field-input" type="text" id="in-youtube" placeholder="例: https://www.youtube.com/watch?v=w2-uvGZCe3g" value={youtube} onChange={e => setYoutube(e.target.value)} />
+              <input className="field-input" type="text" id="in-youtube" placeholder="例: https://www.youtube.com/watch?v=w2-uvGZCe3g" value={youtube} disabled={videoExporting} onChange={e => setYoutube(e.target.value)} />
               <p className="help-text text-[11px] mt-1.5">動画の URL を貼り付けてください</p>
             </div>
             <div>
               <label className="field-label" htmlFor="in-copyright">Copyright</label>
-              <input className="field-input" type="text" id="in-copyright" placeholder="ⓒ 依頼主" value={copyright} onChange={e => setCopyright(e.target.value)} />
+              <input className="field-input" type="text" id="in-copyright" placeholder="ⓒ 依頼主" value={copyright} disabled={videoExporting} onChange={e => setCopyright(e.target.value)} />
             </div>
           </div>
 
@@ -279,19 +311,19 @@ export default function AppleMusicPlayerApp() {
             <div className="flex-1">
               <label className="field-label" htmlFor="in-bg-color">BG</label>
               <div className="color-picker-wrap">
-                <input type="color" id="in-bg-color" value={colors.bgColor} onChange={e => setColors({ ...colors, bgColor: e.target.value })} />
+                <input type="color" id="in-bg-color" value={colors.bgColor} disabled={videoExporting} onChange={e => setColors({ ...colors, bgColor: e.target.value })} />
               </div>
             </div>
             <div className="flex-1">
               <label className="field-label" htmlFor="in-point-color">Accent</label>
               <div className="color-picker-wrap">
-                <input type="color" id="in-point-color" value={colors.pointColor} onChange={e => setColors({ ...colors, pointColor: e.target.value })} />
+                <input type="color" id="in-point-color" value={colors.pointColor} disabled={videoExporting} onChange={e => setColors({ ...colors, pointColor: e.target.value })} />
               </div>
             </div>
             <div className="flex-1">
               <label className="field-label" htmlFor="in-text-color">Text</label>
               <div className="color-picker-wrap">
-                <input type="color" id="in-text-color" value={colors.textColor} onChange={e => setColors({ ...colors, textColor: e.target.value })} />
+                <input type="color" id="in-text-color" value={colors.textColor} disabled={videoExporting} onChange={e => setColors({ ...colors, textColor: e.target.value })} />
               </div>
             </div>
           </div>
@@ -299,9 +331,9 @@ export default function AppleMusicPlayerApp() {
           <hr className="divider" />
 
           <div className="flex flex-col gap-2.5">
-            <button className="btn-primary btn-apply" id="btn-update" type="button" onClick={() => applyPreview()}>適用してプレビュー</button>
+            <button className="btn-primary btn-apply" id="btn-update" type="button" disabled={videoExporting} onClick={() => applyPreview()}>適用してプレビュー</button>
           </div>
-          <VideoExportPanel appId="apple-music-player" exportCardRef={exportCardRef} audio={localAudio} onAudioFileChange={handleAudioFileChange} frameState={frameState} duration={frameState.duration} currentTime={frameState.currentTime} onSeek={(seconds) => handleSeekPercent(frameState.duration > 0 ? seconds / frameState.duration * 100 : 0)} onFrame={handleVideoFrame} volume={frameState.volume} onVolumeChange={handleVolumeChange} onImageSave={handleCapture} />
+          <VideoExportPanel appId="apple-music-player" exportCardRef={exportCardRef} audio={localAudio} onAudioFileChange={handleAudioFileChange} frameState={frameState} duration={frameState.duration} currentTime={frameState.currentTime} onSeek={(seconds) => handleSeekPercent(frameState.duration > 0 ? seconds / frameState.duration * 100 : 0)} onFrame={handleVideoFrame} volume={frameState.volume} onVolumeChange={handleVolumeChange} onImageSave={handleCapture} onExportStart={handleExportStart} onExportEnd={handleExportEnd} onPreviewStart={(range) => { if (exportingRef.current) return; handleSeekPercent(frameState.duration > 0 ? range.start / frameState.duration * 100 : 0); void localAudio.play(); }} onPreviewStop={() => { if (!exportingRef.current) localAudio.pause(); }} />
         </div>
 
       </div>

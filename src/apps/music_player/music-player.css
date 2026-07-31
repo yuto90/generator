@@ -169,6 +169,16 @@
   pointer-events: none;
 }
 
+.app-music .video-export-card,
+.app-music .video-export-card *,
+.app-music .video-export-frame,
+.app-music .video-export-frame * {
+  transition: none !important;
+  animation: none !important;
+}
+
+.app-music .video-export-lock { pointer-events: none; }
+
 /* ---- Progress / Volume slider ---- */
 .app-music .slider-wrap {
   position: relative;

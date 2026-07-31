@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { detectVideoCapabilities } from './video-capabilities';
 import { exportPlayerVideo, type VideoExportPhase } from './video-exporter';
-import { calculateVideoClipRange, parseVideoStartTime } from './video-timeline';
+import { calculateVideoClipRange, calculateVideoOutputHeight, parseVideoStartTime } from './video-timeline';
 import type { LocalAudioState, PlayerFrameState } from './video-types';
 import './video-export-panel.css';
 
@@ -18,6 +19,10 @@ export interface VideoExportPanelProps {
   onVolumeChange: (volume: number) => void;
   /** 既存のPNG保存処理を画像タブから呼び出す。 */
   onImageSave?: () => void | Promise<void>;
+  onExportStart?: () => void;
+  onExportEnd?: () => void;
+  onPreviewStart?: (range: { start: number; end: number; duration: number }) => void;
+  onPreviewStop?: () => void;
 }
 
 type ExportStatus = 'idle' | 'generating' | 'completed' | 'failed' | 'cancelled';
@@ -30,6 +35,7 @@ function formatTime(seconds: number): string {
 function progressText(phase: VideoExportPhase, progress: number): string {
   if (phase === 'preparing') return '準備中';
   if (phase === 'rendering') return `フレーム生成中（${Math.round(progress * 100)}%）`;
+  if (phase === 'audio') return '音声を合成中';
   if (phase === 'muxing') return 'MP4仕上げ中';
   if (phase === 'completed') return 'MP4を保存しました。';
   return '';
@@ -48,6 +54,10 @@ export function VideoExportPanel({
   volume,
   onVolumeChange,
   onImageSave,
+  onExportStart,
+  onExportEnd,
+  onPreviewStart,
+  onPreviewStop,
 }: VideoExportPanelProps) {
   const [tab, setTab] = useState<'image' | 'video'>('image');
   const [startText, setStartText] = useState(() => formatTime(currentTime));
@@ -55,6 +65,9 @@ export function VideoExportPanel({
   const [phaseText, setPhaseText] = useState('');
   const [error, setError] = useState('');
   const [savingImage, setSavingImage] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
+  const [capability, setCapability] = useState<'idle' | 'checking' | 'supported' | 'unsupported'>('idle');
+  const [capabilityMessage, setCapabilityMessage] = useState('');
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const start = parseVideoStartTime(startText);
@@ -63,14 +76,47 @@ export function VideoExportPanel({
     [audio.duration, start],
   );
   const generating = status === 'generating';
-  const canExport = !generating && Boolean(audio.buffer) && Boolean(range);
+  const canExport = !generating && capability === 'supported' && Boolean(audio.buffer) && Boolean(range);
   const inputError = audio.error || (!audio.buffer ? '動画出力にはローカル音源を選択してください。' : '');
 
   useEffect(() => {
     if (!generating) setStartText(formatTime(currentTime));
   }, [currentTime, generating]);
 
-  useEffect(() => () => abortControllerRef.current?.abort(), []);
+  useEffect(() => {
+    if (tab !== 'video') {
+      setCapability('idle');
+      return;
+    }
+    let active = true;
+    setCapability('checking');
+    setCapabilityMessage('');
+    const rect = exportCardRef.current?.getBoundingClientRect();
+    const cssWidth = rect?.width && rect.width > 0 ? rect.width : 360;
+    const cssHeight = rect?.height && rect.height > 0 ? rect.height : 640;
+    const outputHeight = calculateVideoOutputHeight(cssWidth, cssHeight, 1080);
+    void detectVideoCapabilities(1080, outputHeight).then((result) => {
+      if (!active) return;
+      setCapability(result.supported ? 'supported' : 'unsupported');
+      setCapabilityMessage(result.message);
+    }).catch((caught: unknown) => {
+      if (!active) return;
+      setCapability('unsupported');
+      setCapabilityMessage(caught instanceof Error ? caught.message : '動画出力の対応状況を確認できませんでした。');
+    });
+    return () => { active = false; };
+  }, [tab]);
+
+  useEffect(() => () => {
+    abortControllerRef.current?.abort();
+  }, []);
+
+  useEffect(() => {
+    if (!previewing || !range || currentTime < range.end) return;
+    onPreviewStop?.();
+    onSeek(range.start);
+    setPreviewing(false);
+  }, [currentTime, onPreviewStop, onSeek, previewing, range?.end, range?.start]);
 
   const changeStartTime = (value: string) => {
     setStartText(value);
@@ -101,6 +147,7 @@ export function VideoExportPanel({
     setStatus('generating');
     setError('');
     setPhaseText('準備中');
+    onExportStart?.();
 
     try {
       const blob = await exportPlayerVideo({
@@ -125,7 +172,7 @@ export function VideoExportPanel({
       anchor.click();
       URL.revokeObjectURL(url);
       setStatus('completed');
-      setPhaseText(`MP4を保存しました（${formatTime(range.duration)}）。`);
+      setPhaseText(`${appId}.mp4を保存しました（${formatTime(range.duration)}）。`);
     } catch (caught) {
       const message = caught instanceof Error ? caught.message : 'MP4の生成に失敗しました。';
       if (controller.signal.aborted || message === '動画の生成をキャンセルしました。') {
@@ -137,11 +184,25 @@ export function VideoExportPanel({
         setPhaseText('');
       }
     } finally {
+      onExportEnd?.();
       if (abortControllerRef.current === controller) abortControllerRef.current = null;
     }
   };
 
   const cancel = () => abortControllerRef.current?.abort();
+
+  const stopPreview = () => {
+    onPreviewStop?.();
+    if (range) onSeek(range.start);
+    setPreviewing(false);
+  };
+
+  const startPreview = () => {
+    if (!range || !audio.file || generating || previewing) return;
+    onSeek(range.start);
+    onPreviewStart?.(range);
+    setPreviewing(true);
+  };
 
   const saveImage = async () => {
     if (generating || savingImage) return;
@@ -236,12 +297,17 @@ export function VideoExportPanel({
           />
           <p className="video-export-panel__info">MP4・30fps・幅1080px</p>
           <p className="video-export-panel__notice">YouTube音声は動画へ出力されません</p>
+          {capability === 'checking' && <p className="video-export-panel__progress" aria-live="polite">動画出力の対応状況を確認中…</p>}
+          {capability === 'supported' && <p className="video-export-panel__info">H.264/AAC対応: 動画出力できます。</p>}
+          {capability === 'unsupported' && <p className="video-export-panel__error" role="alert">{capabilityMessage || 'H.264/AACに対応していないブラウザです。'}</p>}
           {inputError && <p className="video-export-panel__error" role="alert">{inputError}</p>}
           {!range && audio.buffer && <p className="video-export-panel__error" role="alert">開始位置を音源の範囲内で入力してください。</p>}
           {phaseText && <p className="video-export-panel__progress" aria-live="polite">{phaseText}</p>}
           {error && <p className="video-export-panel__error" role="alert">{error}</p>}
 
           <div className="video-export-panel__actions">
+            <button type="button" disabled={generating || !audio.file || !range || previewing} onClick={startPreview}>範囲をプレビュー</button>
+            {previewing && <button type="button" disabled={generating} onClick={stopPreview}>プレビューを停止</button>}
             <button type="button" className="video-export-panel__save" disabled={!canExport} onClick={() => { void saveVideo(); }}>
               MP4として保存
             </button>

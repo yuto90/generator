@@ -35,5 +35,6 @@ export function calculateVideoOutputHeight(cssWidth: number, cssHeight: number, 
     return 0;
   }
 
-  return Math.round((cssHeight / cssWidth) * outputWidth);
+  const rawHeight = (cssHeight / cssWidth) * outputWidth;
+  return Math.max(2, 2 * Math.round(rawHeight / 2));
 }

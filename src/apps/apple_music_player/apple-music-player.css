@@ -203,6 +203,16 @@
   pointer-events: none;
 }
 
+.app-apple .video-export-card,
+.app-apple .video-export-card *,
+.app-apple .video-export-frame,
+.app-apple .video-export-frame * {
+  transition: none !important;
+  animation: none !important;
+}
+
+.app-apple .video-export-lock { pointer-events: none; }
+
 /* grabber */
 .app-apple .am-grabber {
   width: 36px;

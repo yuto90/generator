@@ -203,6 +203,16 @@
   pointer-events: none;
 }
 
+.app-ytmusic .video-export-card,
+.app-ytmusic .video-export-card *,
+.app-ytmusic .video-export-frame,
+.app-ytmusic .video-export-frame * {
+  transition: none !important;
+  animation: none !important;
+}
+
+.app-ytmusic .video-export-lock { pointer-events: none; }
+
 /* top bar */
 .app-ytmusic .ym-topbar {
   display: flex;

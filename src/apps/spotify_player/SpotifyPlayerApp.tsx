@@ -73,7 +73,7 @@ function SpotifyPlayerCard({
   const volume = Math.min(Math.max(frameState.volume * 100, 0), 100);
 
   return (
-    <article className="spotify-card" id={interactive ? 'player-card' : undefined} ref={cardRef}>
+    <article className={`spotify-card${interactive ? '' : ' video-export-frame'}`} id={interactive ? 'player-card' : undefined} ref={cardRef}>
       <div className="card-topbar">
         <button className="icon-button" type="button" aria-label="閉じる"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.3 8.7a1 1 0 0 1 1.4 0l5.3 5.3 5.3-5.3a1 1 0 1 1 1.4 1.4l-6 6a1 1 0 0 1-1.4 0l-6-6a1 1 0 0 1 0-1.4z" /></svg></button>
         <span className="playing-label">Now playing</span>
@@ -122,6 +122,9 @@ export default function SpotifyPlayerApp() {
   const [status, setStatus] = useState<Status>({ text: '静的プレビューモード', tone: '' });
   const [panelVisible, setPanelVisible] = useState(false);
   const mediaActiveRef = useRef(false);
+  const exportingRef = useRef(false);
+  const exportWasPlayingRef = useRef(false);
+  const [videoExporting, setVideoExporting] = useState(false);
 
   const cardRef = useRef<HTMLElement | null>(null);
   const exportCardRef = useRef<HTMLElement | null>(null);
@@ -194,7 +197,7 @@ export default function SpotifyPlayerApp() {
   }, [yt.ready, yt]);
 
   useEffect(() => {
-    if (!localAudio.file) return;
+    if (!localAudio.file || exportingRef.current) return;
     setTime({ current: localAudio.currentTime, duration: localAudio.duration });
     setPlaying(localAudio.playing);
     setVolume(localAudio.volume * 100);
@@ -241,6 +244,7 @@ export default function SpotifyPlayerApp() {
 
   function applyPreview(event: FormEvent) {
     event.preventDefault();
+    if (exportingRef.current) return;
     const values = validateForm();
     if (!values) return;
 
@@ -271,6 +275,7 @@ export default function SpotifyPlayerApp() {
   }
 
   function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
+    if (exportingRef.current) return;
     const file = event.target.files?.[0];
     setErrors(prev => ({ ...prev, image: '' }));
     if (!file) return;
@@ -291,6 +296,7 @@ export default function SpotifyPlayerApp() {
   }
 
   function handlePlayClick() {
+    if (exportingRef.current) return;
     if (localAudio.file) {
       yt.stop();
       if (localAudio.playing) localAudio.pause();
@@ -311,6 +317,7 @@ export default function SpotifyPlayerApp() {
   }
 
   function handleProgressInput(percentage: number) {
+    if (exportingRef.current) return;
     if (localAudio.file) {
       const duration = localAudio.duration;
       const nextTime = duration > 0 ? duration * (percentage / 100) : 0;
@@ -336,6 +343,7 @@ export default function SpotifyPlayerApp() {
   }
 
   function handleVolumeInput(nextVolume: number) {
+    if (exportingRef.current) return;
     const safeVolume = Math.min(Math.max(nextVolume, 0), 1);
     setVolume(safeVolume * 100);
     if (localAudio.file) localAudio.setVolume(safeVolume);
@@ -343,6 +351,7 @@ export default function SpotifyPlayerApp() {
   }
 
   function handleAudioFileChange(file: File | null) {
+    if (exportingRef.current) return;
     if (!file) {
       localAudio.clear();
       setPlaying(false);
@@ -379,6 +388,23 @@ export default function SpotifyPlayerApp() {
     }
   }
 
+  function handleExportStart() {
+    exportingRef.current = true;
+    exportWasPlayingRef.current = localAudio.playing;
+    setVideoExporting(true);
+    if (localAudio.playing) localAudio.pause();
+    setPlaying(false);
+  }
+
+  function handleExportEnd() {
+    const shouldResume = exportWasPlayingRef.current;
+    exportingRef.current = false;
+    setVideoExporting(false);
+    setTime({ current: localAudio.currentTime, duration: localAudio.duration });
+    setPlaying(shouldResume);
+    if (shouldResume) void localAudio.play();
+  }
+
   const frameState: PlayerFrameState = {
     currentTime: time.current,
     duration: time.duration,
@@ -389,7 +415,7 @@ export default function SpotifyPlayerApp() {
   return (
     <div className="app-spotify">
       <div className="app-shell">
-        <section className="preview-stage" aria-label="プレーヤープレビュー">
+        <section className={`preview-stage${videoExporting ? ' video-export-lock' : ''}`} aria-label="プレーヤープレビュー">
           <SpotifyPlayerCard
             applied={applied}
             frameState={frameState}
@@ -405,7 +431,7 @@ export default function SpotifyPlayerApp() {
         <aside className="editor" aria-label="編集パネル">
           <div className="editor-header">
             <div className="editor-title-wrap"><span className="brand-dot" /><h1>Spotify style</h1></div>
-            <ThemeToggle className="theme-toggle" />
+            <ThemeToggle className="theme-toggle" disabled={videoExporting} />
           </div>
 
           <form className="form" id="player-form" noValidate onSubmit={applyPreview}>
@@ -417,6 +443,7 @@ export default function SpotifyPlayerApp() {
                 type="text"
                 placeholder="曲のタイトル"
                 value={title}
+                disabled={videoExporting}
                 onChange={event => setTitle(event.target.value)}
               />
             </div>
@@ -428,12 +455,13 @@ export default function SpotifyPlayerApp() {
                 type="text"
                 placeholder="アーティスト名"
                 value={artist}
+                disabled={videoExporting}
                 onChange={event => setArtist(event.target.value)}
               />
             </div>
             <div>
               <label className="field-label" htmlFor="in-image">Artwork</label>
-              <input className="file-input" id="in-image" type="file" accept="image/*" onChange={handleImageChange} />
+              <input className="file-input" id="in-image" type="file" accept="image/*" disabled={videoExporting} onChange={handleImageChange} />
               <p className="field-error" id="error-image" aria-live="polite">{errors.image}</p>
             </div>
             <div className="time-fields">
@@ -445,6 +473,7 @@ export default function SpotifyPlayerApp() {
                   type="text"
                   inputMode="numeric"
                   value={currentText}
+                  disabled={videoExporting}
                   onChange={event => setCurrentText(event.target.value)}
                   aria-invalid={errors.current ? true : false}
                   aria-describedby="error-current-time"
@@ -459,6 +488,7 @@ export default function SpotifyPlayerApp() {
                   type="text"
                   inputMode="numeric"
                   value={durationText}
+                  disabled={videoExporting}
                   onChange={event => setDurationText(event.target.value)}
                   aria-invalid={errors.duration ? true : false}
                   aria-describedby="error-duration"
@@ -474,6 +504,7 @@ export default function SpotifyPlayerApp() {
                 type="text"
                 placeholder="URL または動画ID"
                 value={youtubeText}
+                disabled={videoExporting}
                 onChange={event => setYoutubeText(event.target.value)}
                 aria-invalid={errors.youtube ? true : false}
                 aria-describedby="youtube-help error-youtube"
@@ -488,7 +519,7 @@ export default function SpotifyPlayerApp() {
               {status.text}
             </p>
             <div className="actions">
-              <button className="primary-button" id="btn-update" type="submit">適用してプレビュー</button>
+              <button className="primary-button" id="btn-update" type="submit" disabled={videoExporting}>適用してプレビュー</button>
             </div>
             <VideoExportPanel
               appId="spotify-player"
@@ -503,6 +534,16 @@ export default function SpotifyPlayerApp() {
               volume={frameState.volume}
               onVolumeChange={handleVolumeInput}
               onImageSave={handleCapture}
+              onExportStart={handleExportStart}
+              onExportEnd={handleExportEnd}
+              onPreviewStart={(range) => {
+                if (exportingRef.current) return;
+                localAudio.seek(range.start);
+                void localAudio.play();
+              }}
+              onPreviewStop={() => {
+                if (!exportingRef.current) localAudio.pause();
+              }}
             />
           </form>
         </aside>

@@ -172,6 +172,21 @@ describe('exportPlayerVideo', () => {
     expect(result.type).toBe('video/mp4');
   });
 
+  it('フォント描画の準備が完了してから最初のフレームを生成する', async () => {
+    const card = prepareExport();
+    let resolveFonts: (() => void) | undefined;
+    const fontsReady = new Promise<void>((resolve) => { resolveFonts = resolve; });
+    Object.defineProperty(document, 'fonts', { configurable: true, value: { ready: fontsReady } });
+    const onFrame = vi.fn(() => Promise.resolve());
+    const exportPromise = exportPlayerVideo({ card, range, audio: createAudioBuffer(), volume: 1, onFrame });
+
+    await Promise.resolve();
+    expect(onFrame).not.toHaveBeenCalled();
+    resolveFonts?.();
+    await exportPromise;
+    expect(onFrame).toHaveBeenCalled();
+  });
+
   it('フレーム取得中に中断されると後続のフレームを追加せず出力を取り消す', async () => {
     const card = prepareExport();
     const controller = new AbortController();
