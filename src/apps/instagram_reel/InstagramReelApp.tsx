@@ -62,7 +62,7 @@ export default function InstagramReelApp() {
   const [applied, setApplied] = useState<ReelContent>(DEFAULT_CONTENT);
 
   const cardRef = useRef<HTMLDivElement | null>(null);
-  const { capture } = useCapture();
+  const { capture, capturing } = useCapture();
 
   function bindImage(onLoad: (src: string) => void) {
     return (event: ChangeEvent<HTMLInputElement>) => {
@@ -89,9 +89,9 @@ export default function InstagramReelApp() {
   }
 
   function handleCapture() {
-    capture(cardRef.current!, 'instagram_reel.png').catch((error: unknown) => {
+    capture(cardRef.current, 'instagram_reel.png').catch((error: unknown) => {
       const message = error instanceof Error ? error.message : String(error);
-      alert('画像の生成に失敗しました: ' + message);
+      alert(message);
     });
   }
 
@@ -228,7 +228,9 @@ export default function InstagramReelApp() {
 
           <div className="flex flex-col gap-2.5">
             <button className="btn-primary btn-apply" id="btn-update" type="button" onClick={applyPreview}>適用してプレビュー</button>
-            <button className="btn-primary btn-save" id="btn-capture" type="button" onClick={handleCapture}>画像として保存</button>
+            <button className="btn-primary btn-save" id="btn-capture" type="button" onClick={handleCapture} disabled={capturing}>
+              {capturing ? '画像を生成中…' : '画像として保存'}
+            </button>
           </div>
         </div>
 

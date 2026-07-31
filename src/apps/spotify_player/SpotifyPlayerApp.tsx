@@ -258,11 +258,11 @@ export default function SpotifyPlayerApp() {
   async function handleCapture() {
     setStatus({ text: '画像を生成しています…', tone: '' });
     try {
-      await capture(cardRef.current!, 'spotify_player.png');
-      setStatus({ text: '画像を保存しました', tone: 'success' });
+      await capture(cardRef.current, 'spotify_player.png');
+      setStatus({ text: '保存操作を開始しました', tone: 'success' });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      setStatus({ text: `画像の生成に失敗しました: ${message}`, tone: 'error' });
+      setStatus({ text: message, tone: 'error' });
     }
   }
 
@@ -470,7 +470,7 @@ export default function SpotifyPlayerApp() {
                 onClick={handleCapture}
                 disabled={capturing}
               >
-                画像として保存
+                {capturing ? '画像を生成中…' : '画像として保存'}
               </button>
             </div>
           </form>
