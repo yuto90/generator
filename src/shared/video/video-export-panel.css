@@ -1,0 +1,51 @@
+.video-export-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.video-export-panel__tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.video-export-panel__tabs button[aria-selected='true'] {
+  background: var(--gen-accent, #2563eb);
+  color: #fff;
+}
+
+.video-export-panel__content {
+  display: grid;
+  gap: 8px;
+}
+
+.video-export-panel__label {
+  font-weight: 600;
+}
+
+.video-export-panel__range,
+.video-export-panel__info,
+.video-export-panel__notice,
+.video-export-panel__file,
+.video-export-panel__progress,
+.video-export-panel__error {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.video-export-panel__notice {
+  color: var(--gen-text-muted, #525252);
+}
+
+.video-export-panel__error {
+  color: #b42318;
+}
+
+.video-export-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.video-export-panel__save {
+  font-weight: 600;
+}
