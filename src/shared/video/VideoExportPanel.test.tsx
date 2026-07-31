@@ -112,6 +112,22 @@ describe('VideoExportPanel', () => {
     await waitFor(() => expect(saveButton).toBeEnabled());
   });
 
+  it('画像保存中は動画タブを無効化し、MP4操作へ切り替えられない', async () => {
+    const user = userEvent.setup();
+    let finishSave: (() => void) | undefined;
+    const onImageSave = vi.fn(() => new Promise<void>((resolve) => { finishSave = resolve; }));
+    renderPanel({ onImageSave });
+
+    await user.click(screen.getByRole('button', { name: '画像として保存' }));
+
+    expect(screen.getByRole('tab', { name: '画像' })).toBeDisabled();
+    expect(screen.getByRole('tab', { name: '動画' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'MP4として保存' })).not.toBeInTheDocument();
+
+    finishSave?.();
+    await waitFor(() => expect(screen.getByRole('tab', { name: '動画' })).toBeEnabled());
+  });
+
   it('動画タブでローカル音源、開始位置、出力範囲とYouTube対象外の説明を表示する', async () => {
     const user = userEvent.setup();
     const { onAudioFileChange, onSeek } = renderPanel({ audio: createAudio({ duration: 95 }) });

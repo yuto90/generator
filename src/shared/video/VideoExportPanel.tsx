@@ -76,7 +76,8 @@ export function VideoExportPanel({
     [audio.duration, start],
   );
   const generating = status === 'generating';
-  const canExport = !generating && !previewing && capability === 'supported' && Boolean(audio.buffer) && Boolean(range);
+  const busy = generating || savingImage;
+  const canExport = !busy && !previewing && capability === 'supported' && Boolean(audio.buffer) && Boolean(range);
   const inputError = audio.error || (!audio.buffer ? '動画出力にはローカル音源を選択してください。' : '');
 
   useEffect(() => {
@@ -125,6 +126,7 @@ export function VideoExportPanel({
   };
 
   const saveVideo = async () => {
+    if (busy || previewing) return;
     if (!audio.buffer) {
       setError('動画出力にはローカル音源を選択してください。');
       setStatus('failed');
@@ -198,7 +200,7 @@ export function VideoExportPanel({
   };
 
   const startPreview = () => {
-    if (!range || !audio.file || generating || previewing) return;
+    if (!range || !audio.file || busy || previewing) return;
     onSeek(range.start);
     onPreviewStart?.(range);
     setPreviewing(true);
@@ -222,7 +224,7 @@ export function VideoExportPanel({
           role="tab"
           aria-selected={tab === 'image'}
           aria-controls="image-export-panel"
-          disabled={generating}
+          disabled={busy}
           onClick={() => setTab('image')}
         >
           画像
@@ -232,7 +234,7 @@ export function VideoExportPanel({
           role="tab"
           aria-selected={tab === 'video'}
           aria-controls="video-export-panel"
-          disabled={generating}
+          disabled={busy}
           onClick={() => setTab('video')}
         >
           動画
@@ -241,7 +243,7 @@ export function VideoExportPanel({
 
       {tab === 'image' ? (
         <div id="image-export-panel" role="tabpanel" aria-label="画像保存">
-          <button type="button" className="video-export-panel__save" disabled={generating || savingImage} onClick={() => { void saveImage(); }}>
+          <button type="button" className="video-export-panel__save" disabled={busy} onClick={() => { void saveImage(); }}>
             画像として保存
           </button>
         </div>
@@ -252,7 +254,7 @@ export function VideoExportPanel({
             id={`${appId}-video-audio`}
             type="file"
             accept="audio/*"
-            disabled={generating}
+            disabled={busy}
             onChange={(event) => onAudioFileChange(event.target.files?.[0] ?? null)}
           />
           {audio.file && <p className="video-export-panel__file">選択中: {audio.file.name}</p>}
@@ -263,7 +265,7 @@ export function VideoExportPanel({
             type="text"
             inputMode="numeric"
             value={startText}
-            disabled={generating}
+            disabled={busy}
             onChange={(event) => changeStartTime(event.target.value)}
           />
           <label className="video-export-panel__label" htmlFor={`${appId}-video-start-slider`}>動画開始位置スライダー</label>
@@ -274,7 +276,7 @@ export function VideoExportPanel({
             max={Math.floor(Math.max(duration, audio.duration, 0))}
             step="1"
             value={start ?? 0}
-            disabled={generating}
+            disabled={busy}
             onChange={(event) => {
               const seconds = Number(event.target.value);
               setStartText(formatTime(seconds));
@@ -292,7 +294,7 @@ export function VideoExportPanel({
             max="1"
             step="0.01"
             value={volume}
-            disabled={generating}
+            disabled={busy}
             onChange={(event) => onVolumeChange(Number(event.target.value))}
           />
           <p className="video-export-panel__info">MP4・30fps・幅1080px</p>
@@ -306,8 +308,8 @@ export function VideoExportPanel({
           {error && <p className="video-export-panel__error" role="alert">{error}</p>}
 
           <div className="video-export-panel__actions">
-            <button type="button" disabled={generating || !audio.file || !range || previewing} onClick={startPreview}>動画をプレビュー</button>
-            {previewing && <button type="button" disabled={generating} onClick={stopPreview}>プレビューを停止</button>}
+            <button type="button" disabled={busy || !audio.file || !range || previewing} onClick={startPreview}>動画をプレビュー</button>
+            {previewing && <button type="button" disabled={busy} onClick={stopPreview}>プレビューを停止</button>}
             <button type="button" className="video-export-panel__save" disabled={!canExport} onClick={() => { void saveVideo(); }}>
               MP4として保存
             </button>
