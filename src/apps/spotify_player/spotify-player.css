@@ -79,6 +79,15 @@
   overflow: hidden;
 }
 
+/* 動画フレーム生成専用のカード。通常プレビューのレイアウトへ影響させない。 */
+.app-spotify .video-export-card {
+  position: fixed;
+  top: 0;
+  left: -10000px;
+  width: 340px;
+  pointer-events: none;
+}
+
 :root[data-theme='light'] .app-spotify .spotify-card {
   border-color: rgba(25, 20, 20, 0.08);
 }
@@ -336,6 +345,34 @@
 .app-spotify .secondary-button:hover { background: var(--gen-field-bg); }
 .app-spotify .primary-button:disabled,
 .app-spotify .secondary-button:disabled { opacity: 0.55; cursor: wait; }
+
+.app-spotify .video-export-panel {
+  margin-top: 4px;
+}
+
+.app-spotify .video-export-panel button,
+.app-spotify .video-export-panel input {
+  font: inherit;
+}
+
+.app-spotify .video-export-panel__tabs button,
+.app-spotify .video-export-panel__save,
+.app-spotify .video-export-panel__actions button {
+  min-height: 38px;
+  padding: 8px 12px;
+  color: var(--gen-text-main);
+  background: var(--gen-field-bg);
+  border: 1px solid var(--gen-field-border);
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.app-spotify .video-export-panel__tabs button[aria-selected='true'],
+.app-spotify .video-export-panel__save {
+  color: #07150c;
+  background: var(--gen-accent);
+  border-color: var(--gen-accent);
+}
 
 @media (max-width: 768px) {
   .app-spotify .app-shell { grid-template-columns: 1fr; }

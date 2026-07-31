@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { ThemeProvider } from '../shared/theme/ThemeContext';
@@ -18,6 +18,24 @@ function renderApp(app: ReactNode) {
 }
 
 describe('SpotifyPlayerApp', () => {
+  let localAudio: { currentTime: number; duration: number; listeners: Map<string, () => void>; [key: string]: unknown };
+
+  beforeEach(() => {
+    localAudio = {
+      currentTime: 0, duration: Number.NaN, volume: 1, src: '', play: vi.fn(() => Promise.resolve()), pause: vi.fn(),
+      listeners: new Map<string, () => void>(),
+      addEventListener: vi.fn((name: string, listener: () => void) => localAudio.listeners.set(name, listener)),
+      removeEventListener: vi.fn((name: string) => localAudio.listeners.delete(name)), removeAttribute: vi.fn(), load: vi.fn(),
+    };
+    vi.stubGlobal('Audio', vi.fn(() => localAudio));
+    vi.stubGlobal('URL', { createObjectURL: vi.fn(() => 'blob:spotify-audio'), revokeObjectURL: vi.fn() });
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
   test('主要なフォームとプレビュー要素を描画する', () => {
     renderApp(<SpotifyPlayerApp />);
 
@@ -49,6 +67,39 @@ describe('SpotifyPlayerApp', () => {
     expect(position).toHaveAttribute('aria-invalid', 'false');
     expect(document.getElementById('song-title')).toHaveTextContent('テスト曲');
     expect(document.getElementById('time-current')).toHaveTextContent('1:00');
+  });
+
+  test('静的な時刻を保ったまま動画タブでローカル音源を選択でき、PNG保存も表示する', async () => {
+    const user = userEvent.setup();
+    renderApp(<SpotifyPlayerApp />);
+
+    await user.clear(screen.getByLabelText('Position'));
+    await user.type(screen.getByLabelText('Position'), '1:05');
+    await user.clear(screen.getByLabelText('Duration'));
+    await user.type(screen.getByLabelText('Duration'), '2:30');
+    await user.click(screen.getByRole('button', { name: '適用してプレビュー' }));
+
+    expect(document.getElementById('time-current')).toHaveTextContent('1:05');
+    expect(document.getElementById('time-total')).toHaveTextContent('2:30');
+    expect(screen.getByRole('button', { name: '画像として保存' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', { name: '動画' }));
+    const audioInput = screen.getByLabelText('ローカル音源（動画用）');
+    await user.upload(audioInput, new File(['audio'], 'spotify.mp3', { type: 'audio/mpeg' }));
+
+    expect(audioInput).toHaveAttribute('accept', 'audio/*');
+    await waitFor(() => expect(screen.getByText('選択中: spotify.mp3')).toBeInTheDocument());
+    localAudio.duration = 123;
+    localAudio.currentTime = 45;
+    act(() => {
+      localAudio.listeners.get('loadedmetadata')?.();
+      localAudio.listeners.get('timeupdate')?.();
+    });
+
+    await waitFor(() => expect(document.getElementById('time-current')).toHaveTextContent('0:45'));
+    expect(document.getElementById('time-total')).toHaveTextContent('2:03');
+    expect(screen.getByLabelText('動画開始位置スライダー')).toHaveAttribute('max', '123');
+    expect(screen.getByText('YouTube音声は動画へ出力されません')).toBeInTheDocument();
   });
 });
 
