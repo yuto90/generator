@@ -306,7 +306,7 @@ export function VideoExportPanel({
           {error && <p className="video-export-panel__error" role="alert">{error}</p>}
 
           <div className="video-export-panel__actions">
-            <button type="button" disabled={generating || !audio.file || !range || previewing} onClick={startPreview}>範囲をプレビュー</button>
+            <button type="button" disabled={generating || !audio.file || !range || previewing} onClick={startPreview}>動画をプレビュー</button>
             {previewing && <button type="button" disabled={generating} onClick={stopPreview}>プレビューを停止</button>}
             <button type="button" className="video-export-panel__save" disabled={!canExport} onClick={() => { void saveVideo(); }}>
               MP4として保存

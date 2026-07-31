@@ -144,7 +144,7 @@ describe('VideoExportPanel', () => {
     });
 
     await user.click(screen.getByRole('tab', { name: '動画' }));
-    const previewButton = screen.getByRole('button', { name: '範囲をプレビュー' });
+    const previewButton = screen.getByRole('button', { name: '動画をプレビュー' });
     await user.click(previewButton);
 
     expect(onPreviewStart).toHaveBeenCalledOnce();
