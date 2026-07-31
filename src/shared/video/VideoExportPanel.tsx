@@ -271,7 +271,7 @@ export function VideoExportPanel({
             id={`${appId}-video-start-slider`}
             type="range"
             min="0"
-            max={Math.max(duration, audio.duration, 0)}
+            max={Math.floor(Math.max(duration, audio.duration, 0))}
             step="1"
             value={start ?? 0}
             disabled={generating}
