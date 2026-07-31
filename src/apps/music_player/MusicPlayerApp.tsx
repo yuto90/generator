@@ -291,11 +291,13 @@ export default function MusicPlayerApp() {
     localAudio.setVolume(frameState.volume);
   }
 
-  function handleCapture() {
-    capture(cardRef.current!, 'my_custom_player.png').catch((error: unknown) => {
+  async function handleCapture(): Promise<void> {
+    try {
+      await capture(cardRef.current!, 'my_custom_player.png');
+    } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       alert('画像の生成に失敗しました: ' + message);
-    });
+    }
   }
 
   function handleVideoFrame(nextFrame: PlayerFrameState): Promise<void> {

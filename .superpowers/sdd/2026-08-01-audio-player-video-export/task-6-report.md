@@ -20,3 +20,9 @@
 - 画像保存の Promise 完了まで保存ボタンを無効化し、連打によるPNGの二重生成を防止した。
 - Spotify の未使用 children JSX を削除し、表示・出力とも `SpotifyPlayerCard` のプロパティだけで描画するよう整理した。
 - 修正後の `npm test`（69 Vitest tests、8 Node tests）と `npm run build` は通過した。
+
+## 再レビュー修正
+
+- Music Player、Apple Music、YouTube Music のPNG保存ハンドラが `capture` のPromiseを返すようにし、共通パネルの保存ロックを生成完了まで維持した。
+- Music Playerで遅延したPNG生成中に保存ボタンが無効のままになる結合テストを追加した。
+- 修正後の `npm test`（70 Vitest tests、8 Node tests）と `npm run build` は通過した。

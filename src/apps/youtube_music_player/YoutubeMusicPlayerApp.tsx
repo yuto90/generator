@@ -205,11 +205,13 @@ export default function YoutubeMusicPlayerApp() {
     localAudio.setVolume(frameState.volume);
   }
 
-  function handleCapture() {
-    capture(cardRef.current!, 'youtube_music_player.png').catch((error: unknown) => {
+  async function handleCapture(): Promise<void> {
+    try {
+      await capture(cardRef.current!, 'youtube_music_player.png');
+    } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       alert('画像の生成に失敗しました: ' + message);
-    });
+    }
   }
 
   function handleVideoFrame(nextFrame: PlayerFrameState): Promise<void> {

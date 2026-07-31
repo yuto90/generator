@@ -9,9 +9,9 @@ import AppleMusicPlayerApp from './apple_music_player/AppleMusicPlayerApp';
 import YoutubeMusicPlayerApp from './youtube_music_player/YoutubeMusicPlayerApp';
 import InstagramReelApp from './instagram_reel/InstagramReelApp';
 
-vi.mock('html-to-image', () => ({
-  toPng: vi.fn(async () => 'data:image/png;base64,'),
-}));
+const htmlToImage = vi.hoisted(() => ({ toPng: vi.fn(async () => 'data:image/png;base64,') }));
+
+vi.mock('html-to-image', () => htmlToImage);
 
 function renderApp(app: ReactNode) {
   return render(<ThemeProvider>{app}</ThemeProvider>);
@@ -143,6 +143,25 @@ describe('MusicPlayerApp', () => {
 
     expect(screen.getByLabelText('ローカル音源（動画用）')).toHaveAttribute('accept', 'audio/*');
     expect(screen.getByText('YouTube音声は動画へ出力されません')).toBeInTheDocument();
+  });
+
+  test('PNG生成が完了するまで共通パネルの保存ロックを維持する', async () => {
+    const user = userEvent.setup();
+    let finishCapture: (() => void) | undefined;
+    Object.defineProperty(document, 'fonts', { configurable: true, value: { ready: Promise.resolve() } });
+    const anchorClick = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    htmlToImage.toPng.mockImplementationOnce(() => new Promise<string>((resolve) => { finishCapture = () => resolve('data:image/png;base64,'); }));
+    renderApp(<MusicPlayerApp />);
+
+    const saveButton = screen.getByRole('button', { name: '画像として保存' });
+    await user.click(saveButton);
+
+    await waitFor(() => expect(htmlToImage.toPng).toHaveBeenCalledOnce());
+    expect(saveButton).toBeDisabled();
+
+    finishCapture?.();
+    await waitFor(() => expect(saveButton).toBeEnabled());
+    anchorClick.mockRestore();
   });
 });
 
