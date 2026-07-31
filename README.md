@@ -28,6 +28,14 @@ npm run dev
 - spotify_player: http://localhost:5173/#/spotify_player
 - instagram_reel: http://localhost:5173/#/instagram_reel
 
+## 音声プレーヤーの動画出力
+
+Music Player、Apple Music、YouTube Music、Spotify Style の保存パネルでは、従来どおり「画像」タブからPNGを保存できます。「動画」タブでは、ローカル音源を選び、開始位置を指定してMP4を保存します。
+
+- 動画出力にはローカル音源が必須です。出力は開始位置から最大30秒（曲末では1秒以上30秒未満）です。
+- 出力は幅1080px・30fpsのMP4（H.264映像／AAC音声）です。ChromeとSafariでの利用を想定しており、保存時にブラウザのエンコード対応状況を確認します。
+- YouTube URLはプレビュー専用です。YouTube音声は動画へ出力されません。
+
 ## ビルドとテスト
 
 ```bash
