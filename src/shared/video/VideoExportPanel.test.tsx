@@ -132,6 +132,26 @@ describe('VideoExportPanel', () => {
     expect(screen.getByText('動画出力にはローカル音源を選択してください。')).toBeInTheDocument();
   });
 
+  it('範囲プレビュー中はMP4保存を無効化する', async () => {
+    const user = userEvent.setup();
+    const onPreviewStart = vi.fn();
+    renderPanel({
+      audio: createAudio({
+        file: new File(['audio'], 'sample.wav', { type: 'audio/wav' }),
+        buffer: { duration: 120 } as AudioBuffer,
+      }),
+      onPreviewStart,
+    });
+
+    await user.click(screen.getByRole('tab', { name: '動画' }));
+    const previewButton = screen.getByRole('button', { name: '範囲をプレビュー' });
+    await user.click(previewButton);
+
+    expect(onPreviewStart).toHaveBeenCalledOnce();
+    expect(screen.getByRole('button', { name: 'MP4として保存' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'プレビューを停止' })).toBeEnabled();
+  });
+
   it('エンコーダー非対応の失敗を表示し、同じ入力で再試行できる', async () => {
     const user = userEvent.setup();
     const buffer = { duration: 120 } as AudioBuffer;

@@ -76,7 +76,7 @@ export function VideoExportPanel({
     [audio.duration, start],
   );
   const generating = status === 'generating';
-  const canExport = !generating && capability === 'supported' && Boolean(audio.buffer) && Boolean(range);
+  const canExport = !generating && !previewing && capability === 'supported' && Boolean(audio.buffer) && Boolean(range);
   const inputError = audio.error || (!audio.buffer ? '動画出力にはローカル音源を選択してください。' : '');
 
   useEffect(() => {
