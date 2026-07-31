@@ -195,6 +195,14 @@
     0 1px 0 rgba(255, 255, 255, 0.08) inset;
 }
 
+.app-ytmusic .video-export-card {
+  position: fixed;
+  left: -10000px;
+  top: 0;
+  width: 340px;
+  pointer-events: none;
+}
+
 /* top bar */
 .app-ytmusic .ym-topbar {
   display: flex;

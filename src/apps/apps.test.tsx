@@ -96,6 +96,17 @@ describe('MusicPlayerApp', () => {
 });
 
 describe('AppleMusicPlayerApp', () => {
+  beforeEach(() => {
+    vi.stubGlobal('Audio', vi.fn(() => ({
+      currentTime: 0, duration: Number.NaN, volume: 1, src: '', play: vi.fn(() => Promise.resolve()), pause: vi.fn(),
+      addEventListener: vi.fn(), removeEventListener: vi.fn(), removeAttribute: vi.fn(), load: vi.fn(),
+    })));
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   test('テーマ既定色でカードを初期化する', () => {
     renderApp(<AppleMusicPlayerApp />);
 
@@ -103,15 +114,60 @@ describe('AppleMusicPlayerApp', () => {
     expect(bgPicker.value).toBe('#8e3b52');
     expect(document.getElementById('copyright-text')).toHaveTextContent('ⓒ 出典');
   });
+
+  test('動画タブでも既存のカードとYouTubeプレビュー操作を保持する', async () => {
+    const user = userEvent.setup();
+    renderApp(<AppleMusicPlayerApp />);
+
+    expect(document.getElementById('player-card')).toHaveClass('am-card');
+    expect(document.getElementById('cover-img')).toHaveClass('am-artwork');
+    expect(document.getElementById('time-current')).toHaveTextContent('0:00');
+    expect(screen.getByLabelText('音量')).toHaveValue('50');
+    expect(screen.getByLabelText('YouTube URL')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '画像として保存' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', { name: '動画' }));
+
+    expect(screen.getByLabelText('ローカル音源（動画用）')).toHaveAttribute('accept', 'audio/*');
+    expect(screen.getByText('YouTube音声は動画へ出力されません')).toBeInTheDocument();
+  });
 });
 
 describe('YoutubeMusicPlayerApp', () => {
+  beforeEach(() => {
+    vi.stubGlobal('Audio', vi.fn(() => ({
+      currentTime: 0, duration: Number.NaN, volume: 1, src: '', play: vi.fn(() => Promise.resolve()), pause: vi.fn(),
+      addEventListener: vi.fn(), removeEventListener: vi.fn(), removeAttribute: vi.fn(), load: vi.fn(),
+    })));
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   test('テーマ既定色でカードを初期化する', () => {
     renderApp(<YoutubeMusicPlayerApp />);
 
     const bgPicker = document.getElementById('in-bg-color') as HTMLInputElement;
     expect(bgPicker.value).toBe('#030303');
     expect(document.getElementById('time-total')).toHaveTextContent('-:--');
+  });
+
+  test('動画タブでも既存のカードとYouTubeプレビュー操作を保持する', async () => {
+    const user = userEvent.setup();
+    renderApp(<YoutubeMusicPlayerApp />);
+
+    expect(document.getElementById('player-card')).toHaveClass('ym-card');
+    expect(document.getElementById('cover-img')).toHaveClass('ym-artwork');
+    expect(document.getElementById('time-total')).toHaveTextContent('-:--');
+    expect(screen.getByLabelText('音量')).toHaveValue('50');
+    expect(screen.getByLabelText('YouTube URL')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '画像として保存' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', { name: '動画' }));
+
+    expect(screen.getByLabelText('ローカル音源（動画用）')).toHaveAttribute('accept', 'audio/*');
+    expect(screen.getByText('YouTube音声は動画へ出力されません')).toBeInTheDocument();
   });
 });
 
