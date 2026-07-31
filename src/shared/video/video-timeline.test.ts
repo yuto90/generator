@@ -48,6 +48,18 @@ describe('calculateVideoClipRange', () => {
     });
   });
 
+  it('残り時間が1秒未満なら切り出せない', () => {
+    expect(calculateVideoClipRange(10, 9.01)).toBeNull();
+  });
+
+  it('残り時間がちょうど1秒なら切り出せる', () => {
+    expect(calculateVideoClipRange(10, 9)).toEqual({
+      start: 9,
+      end: 10,
+      duration: 1,
+    });
+  });
+
   it.each([
     [Number.NaN, 0],
     [30, Number.POSITIVE_INFINITY],

@@ -70,20 +70,28 @@ export function useLocalAudio(): LocalAudioControls {
     audio.currentTime = 0;
     setState((current) => ({ ...current, file, buffer: null, duration: 0, currentTime: 0, playing: false, error: '' }));
 
+    let context: AudioContext | null = null;
     try {
       const AudioContextConstructor = window.AudioContext
         ?? (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (!AudioContextConstructor || !file.arrayBuffer) return;
 
-      const context = new AudioContextConstructor();
+      context = new AudioContextConstructor();
       const buffer = await context.decodeAudioData(await file.arrayBuffer());
-      await context.close();
       if (objectUrlRef.current === objectUrl) {
         setState((current) => ({ ...current, buffer }));
       }
     } catch {
       if (objectUrlRef.current === objectUrl) {
         setState((current) => ({ ...current, error: '音源を読み込めませんでした。' }));
+      }
+    } finally {
+      if (context) {
+        try {
+          await context.close();
+        } catch {
+          // 解放失敗はデコード結果に影響させない
+        }
       }
     }
   }, [revokeObjectUrl]);

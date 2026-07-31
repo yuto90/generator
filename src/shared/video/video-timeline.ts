@@ -19,6 +19,8 @@ export function calculateVideoClipRange(audioDuration: number, start: number): V
   }
 
   const end = Math.min(start + MAX_CLIP_DURATION, audioDuration);
+  if (end - start < 1) return null;
+
   return { start, end, duration: end - start };
 }
 

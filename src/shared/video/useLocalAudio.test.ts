@@ -85,6 +85,22 @@ describe('useLocalAudio', () => {
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:first.mp3');
   });
 
+  it('デコードに失敗しても AudioContext を閉じる', async () => {
+    const close = vi.fn(() => Promise.resolve());
+    vi.stubGlobal('AudioContext', vi.fn(() => ({
+      decodeAudioData: vi.fn(() => Promise.reject(new Error('decode failed'))),
+      close,
+    })));
+    const { result } = renderHook(() => useLocalAudio());
+    const file = new File(['audio'], 'first.mp3');
+    Object.defineProperty(file, 'arrayBuffer', { value: vi.fn(() => Promise.resolve(new ArrayBuffer(1))) });
+
+    await act(async () => result.current.selectFile(file));
+
+    expect(close).toHaveBeenCalledOnce();
+    expect(result.current.error).toBe('音源を読み込めませんでした。');
+  });
+
   it('選択済みのローカル音源を再生・停止・シークできる', async () => {
     const { result } = renderHook(() => useLocalAudio());
     await act(async () => result.current.selectFile(new File(['audio'], 'first.mp3')));
