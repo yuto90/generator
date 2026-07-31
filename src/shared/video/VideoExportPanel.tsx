@@ -54,6 +54,7 @@ export function VideoExportPanel({
   const [status, setStatus] = useState<ExportStatus>('idle');
   const [phaseText, setPhaseText] = useState('');
   const [error, setError] = useState('');
+  const [savingImage, setSavingImage] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const start = parseVideoStartTime(startText);
@@ -142,6 +143,16 @@ export function VideoExportPanel({
 
   const cancel = () => abortControllerRef.current?.abort();
 
+  const saveImage = async () => {
+    if (generating || savingImage) return;
+    setSavingImage(true);
+    try {
+      await onImageSave?.();
+    } finally {
+      setSavingImage(false);
+    }
+  };
+
   return (
     <section className="video-export-panel" aria-label="保存形式">
       <div className="video-export-panel__tabs" role="tablist" aria-label="保存形式">
@@ -169,7 +180,7 @@ export function VideoExportPanel({
 
       {tab === 'image' ? (
         <div id="image-export-panel" role="tabpanel" aria-label="画像保存">
-          <button type="button" className="video-export-panel__save" disabled={generating} onClick={() => { void onImageSave?.(); }}>
+          <button type="button" className="video-export-panel__save" disabled={generating || savingImage} onClick={() => { void saveImage(); }}>
             画像として保存
           </button>
         </div>

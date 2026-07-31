@@ -80,6 +80,24 @@ describe('VideoExportPanel', () => {
     expect(onImageSave).toHaveBeenCalledOnce();
   });
 
+  it('画像保存中は保存ボタンを無効化して二重実行を防ぐ', async () => {
+    const user = userEvent.setup();
+    let finishSave: (() => void) | undefined;
+    const onImageSave = vi.fn(() => new Promise<void>((resolve) => { finishSave = resolve; }));
+    renderPanel({ onImageSave });
+
+    const saveButton = screen.getByRole('button', { name: '画像として保存' });
+    await user.click(saveButton);
+
+    expect(onImageSave).toHaveBeenCalledOnce();
+    expect(saveButton).toBeDisabled();
+    await user.click(saveButton);
+    expect(onImageSave).toHaveBeenCalledOnce();
+
+    finishSave?.();
+    await waitFor(() => expect(saveButton).toBeEnabled());
+  });
+
   it('動画タブでローカル音源、開始位置、出力範囲とYouTube対象外の説明を表示する', async () => {
     const user = userEvent.setup();
     const { onAudioFileChange, onSeek } = renderPanel({ audio: createAudio({ duration: 95 }) });

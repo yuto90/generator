@@ -14,3 +14,9 @@
 - `npm test` — 68 Vitest tests と 8 Node tests passed。
 - `npm run build` — passed。
 - `git diff --check` — passed。
+
+## レビュー修正
+
+- 画像保存の Promise 完了まで保存ボタンを無効化し、連打によるPNGの二重生成を防止した。
+- Spotify の未使用 children JSX を削除し、表示・出力とも `SpotifyPlayerCard` のプロパティだけで描画するよう整理した。
+- 修正後の `npm test`（69 Vitest tests、8 Node tests）と `npm run build` は通過した。
