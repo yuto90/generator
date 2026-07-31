@@ -522,7 +522,7 @@ export default function SpotifyPlayerApp() {
               <button className="primary-button" id="btn-update" type="submit" disabled={videoExporting}>適用してプレビュー</button>
             </div>
             <VideoExportPanel
-              appId="spotify-player"
+              appId="spotify_player"
               exportCardRef={exportCardRef}
               audio={localAudio}
               onAudioFileChange={handleAudioFileChange}

@@ -394,7 +394,7 @@ export default function MusicPlayerApp() {
             <button className="btn-primary btn-apply" id="btn-update" type="button" disabled={videoExporting} onClick={() => applyPreview()}>適用してプレビュー</button>
           </div>
           <VideoExportPanel
-            appId="music-player"
+            appId="music_player"
             exportCardRef={exportCardRef}
             audio={localAudio}
             onAudioFileChange={handleAudioFileChange}

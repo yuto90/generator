@@ -110,6 +110,7 @@ describe('VideoExportPanel', () => {
 
     expect(screen.getByLabelText('ローカル音源（動画用）')).toHaveAttribute('accept', 'audio/*');
     expect(screen.getByLabelText('動画開始位置（m:ss）')).toHaveValue('1:20');
+    expect(screen.getByLabelText('動画開始位置スライダー')).toHaveAttribute('step', '1');
     expect(screen.getByText('出力範囲: 1:20–1:35')).toBeInTheDocument();
     expect(screen.getByText('YouTube音声は動画へ出力されません')).toBeInTheDocument();
 

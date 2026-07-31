@@ -272,7 +272,7 @@ export function VideoExportPanel({
             type="range"
             min="0"
             max={Math.max(duration, audio.duration, 0)}
-            step="0.1"
+            step="1"
             value={start ?? 0}
             disabled={generating}
             onChange={(event) => {

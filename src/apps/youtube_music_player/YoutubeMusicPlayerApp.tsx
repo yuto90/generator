@@ -326,7 +326,7 @@ export default function YoutubeMusicPlayerApp() {
           <div className="flex flex-col gap-2.5">
             <button className="btn-primary btn-apply" id="btn-update" type="button" disabled={videoExporting} onClick={() => applyPreview()}>適用してプレビュー</button>
           </div>
-          <VideoExportPanel appId="youtube-music-player" exportCardRef={exportCardRef} audio={localAudio} onAudioFileChange={handleAudioFileChange} frameState={frameState} duration={frameState.duration} currentTime={frameState.currentTime} onSeek={(seconds) => handleSeekPercent(frameState.duration > 0 ? seconds / frameState.duration * 100 : 0)} onFrame={handleVideoFrame} volume={frameState.volume} onVolumeChange={handleVolumeChange} onImageSave={handleCapture} onExportStart={handleExportStart} onExportEnd={handleExportEnd} onPreviewStart={(range) => { if (exportingRef.current) return; localAudio.seek(range.start); void localAudio.play(); }} onPreviewStop={() => { if (!exportingRef.current) localAudio.pause(); }} />
+          <VideoExportPanel appId="youtube_music_player" exportCardRef={exportCardRef} audio={localAudio} onAudioFileChange={handleAudioFileChange} frameState={frameState} duration={frameState.duration} currentTime={frameState.currentTime} onSeek={(seconds) => handleSeekPercent(frameState.duration > 0 ? seconds / frameState.duration * 100 : 0)} onFrame={handleVideoFrame} volume={frameState.volume} onVolumeChange={handleVolumeChange} onImageSave={handleCapture} onExportStart={handleExportStart} onExportEnd={handleExportEnd} onPreviewStart={(range) => { if (exportingRef.current) return; localAudio.seek(range.start); void localAudio.play(); }} onPreviewStop={() => { if (!exportingRef.current) localAudio.pause(); }} />
         </div>
 
       </div>
