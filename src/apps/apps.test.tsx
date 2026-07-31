@@ -9,15 +9,21 @@ import AppleMusicPlayerApp from './apple_music_player/AppleMusicPlayerApp';
 import YoutubeMusicPlayerApp from './youtube_music_player/YoutubeMusicPlayerApp';
 import InstagramReelApp from './instagram_reel/InstagramReelApp';
 
-const download = vi.hoisted(() => vi.fn<(element: Element, options?: Record<string, unknown>) => Promise<void>>());
+const captureSnap = vi.hoisted(() => vi.fn());
+const download = vi.hoisted(() => vi.fn<() => Promise<void>>());
 
 vi.mock('@zumer/snapdom', () => ({
-  snapdom: { download },
+  snapdom: captureSnap,
 }));
 
 beforeEach(() => {
   download.mockReset();
   download.mockResolvedValue(undefined);
+  captureSnap.mockReset();
+  captureSnap.mockResolvedValue({
+    toCanvas: vi.fn().mockResolvedValue(document.createElement('canvas')),
+    download,
+  });
 });
 
 function renderApp(app: ReactNode) {

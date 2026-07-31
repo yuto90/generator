@@ -4,6 +4,7 @@ import { snapdom } from '@zumer/snapdom';
 const TARGET_ERROR = '保存対象が見つかりませんでした。ページを再読み込みして、もう一度お試しください。';
 const IMAGE_ERROR = '画像を読み込めませんでした。画像を選び直して、もう一度お試しください。';
 const GENERIC_ERROR = '画像を生成できませんでした。ページを再読み込みして、もう一度お試しください。';
+const CAPTURE_SCALE = 4;
 
 export class CaptureError extends Error {
   constructor(message: string, cause?: unknown) {
@@ -22,6 +23,39 @@ function normalizeCaptureError(error: unknown) {
   return new CaptureError(isImageRenderError(error) ? IMAGE_ERROR : GENERIC_ERROR, error);
 }
 
+function isSafari() {
+  return /safari/i.test(navigator.userAgent) && !/(?:chrome|chromium|android)/i.test(navigator.userAgent);
+}
+
+function createCaptureTarget(element: HTMLElement) {
+  const appRoot = element.closest<HTMLElement>('[class^="app-"], [class*=" app-"]') ?? document.body;
+  const captureTarget = element.cloneNode(true) as HTMLElement;
+
+  Object.assign(captureTarget.style, {
+    position: 'fixed',
+    top: '0',
+    left: '-100000px',
+    margin: '0',
+    pointerEvents: 'none',
+    transform: `scale(${CAPTURE_SCALE})`,
+    transformOrigin: 'top left',
+  });
+  captureTarget.setAttribute('aria-hidden', 'true');
+  appRoot.append(captureTarget);
+
+  // SnapDOMはno-repeatのCSS背景を出力サイズに合わせて事前圧縮する。
+  // Safariで大きなdata URLの描画が途中で欠落しないよう、保存用の複製だけ正規化する。
+  const nodes = [captureTarget, ...captureTarget.querySelectorAll<HTMLElement>('*')];
+  nodes.forEach((node) => {
+    const style = getComputedStyle(node);
+    if (/url\(/i.test(style.backgroundImage) && /(?:cover|contain)/i.test(style.backgroundSize)) {
+      node.style.backgroundRepeat = 'no-repeat';
+    }
+  });
+
+  return captureTarget;
+}
+
 /**
  * プレビューカードを PNG として保存する(全アプリ共通のキャプチャ処理)。
  * SnapDOM はブラウザ自身の描画(SVG foreignObject)を使うため、
@@ -32,18 +66,31 @@ export function useCapture() {
   const [capturing, setCapturing] = useState(false);
 
   const capture = useCallback(async (element: HTMLElement | null, fileName: string) => {
+    let captureTarget: HTMLElement | null = null;
     setCapturing(true);
     try {
       if (!element) throw new CaptureError(TARGET_ERROR);
       if (document.fonts?.ready) await document.fonts.ready;
-      await snapdom.download(element, {
+      captureTarget = createCaptureTarget(element);
+      const captureResult = await snapdom(captureTarget, {
         format: 'png',
         filename: fileName,
-        scale: 4,
+        scale: 1,
+        dpr: 1,
       });
+      if (isSafari()) {
+        // WebKitはforeignObject内のフォント・画像を最初のdrawImageで
+        // 遅延描画するため、同じSVGを一度ラスタライズしてから保存する。
+        await captureResult.toCanvas();
+        await new Promise<void>((resolve) => {
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+        });
+      }
+      await captureResult.download();
     } catch (error) {
       throw normalizeCaptureError(error);
     } finally {
+      captureTarget?.remove();
       setCapturing(false);
     }
   }, []);
