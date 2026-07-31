@@ -1,4 +1,4 @@
-import { describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
@@ -53,6 +53,23 @@ describe('SpotifyPlayerApp', () => {
 });
 
 describe('MusicPlayerApp', () => {
+  beforeEach(() => {
+    vi.stubGlobal('Audio', vi.fn(() => ({
+      currentTime: 0,
+      duration: Number.NaN,
+      volume: 1,
+      src: '',
+      play: vi.fn(() => Promise.resolve()),
+      pause: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })));
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   test('フォームとカードを描画し、適用でタイトルが反映される', async () => {
     const user = userEvent.setup();
     renderApp(<MusicPlayerApp />);
@@ -63,6 +80,18 @@ describe('MusicPlayerApp', () => {
     expect(document.getElementById('song-title')).toHaveTextContent('グラスの曲');
     expect(document.getElementById('player-card')).not.toBeNull();
     expect(screen.getByRole('button', { name: '再生と一時停止' })).toBeInTheDocument();
+  });
+
+  test('動画タブからローカル音源を選択でき、YouTube音源は動画対象外と案内する', async () => {
+    const user = userEvent.setup();
+    renderApp(<MusicPlayerApp />);
+
+    expect(screen.getByRole('button', { name: '画像として保存' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', { name: '動画' }));
+
+    expect(screen.getByLabelText('ローカル音源（動画用）')).toHaveAttribute('accept', 'audio/*');
+    expect(screen.getByText('YouTube音声は動画へ出力されません')).toBeInTheDocument();
   });
 });
 
