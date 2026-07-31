@@ -80,8 +80,8 @@ export function VideoExportPanel({
   const inputError = audio.error || (!audio.buffer ? '動画出力にはローカル音源を選択してください。' : '');
 
   useEffect(() => {
-    if (!generating) setStartText(formatTime(currentTime));
-  }, [currentTime, generating]);
+    if (!generating && !previewing) setStartText(formatTime(currentTime));
+  }, [currentTime, generating, previewing]);
 
   useEffect(() => {
     if (tab !== 'video') {

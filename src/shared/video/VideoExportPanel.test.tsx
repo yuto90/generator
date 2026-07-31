@@ -45,25 +45,35 @@ function renderPanel(overrides: Partial<React.ComponentProps<typeof VideoExportP
   const onVolumeChange = vi.fn();
   const onImageSave = vi.fn();
 
-  render(
+  const props = {
+    appId: 'music_player',
+    exportCardRef,
+    audio: createAudio(),
+    onAudioFileChange,
+    frameState,
+    duration: 120,
+    currentTime: 80,
+    onSeek,
+    onFrame,
+    volume: 0.7,
+    onVolumeChange,
+    onImageSave,
+    ...overrides,
+  } satisfies React.ComponentProps<typeof VideoExportPanel>;
+  const view = render(
     <VideoExportPanel
-      appId="music_player"
-      exportCardRef={exportCardRef}
-      audio={createAudio()}
-      onAudioFileChange={onAudioFileChange}
-      frameState={frameState}
-      duration={120}
-      currentTime={80}
-      onSeek={onSeek}
-      onFrame={onFrame}
-      volume={0.7}
-      onVolumeChange={onVolumeChange}
-      onImageSave={onImageSave}
-      {...overrides}
+      {...props}
     />,
   );
 
-  return { onAudioFileChange, onSeek, onFrame, onVolumeChange, onImageSave };
+  return {
+    onAudioFileChange,
+    onSeek,
+    onFrame,
+    onVolumeChange,
+    onImageSave,
+    rerender: (nextOverrides: Partial<React.ComponentProps<typeof VideoExportPanel>> = {}) => view.rerender(<VideoExportPanel {...props} {...nextOverrides} />),
+  };
 }
 
 describe('VideoExportPanel', () => {
@@ -152,6 +162,23 @@ describe('VideoExportPanel', () => {
     expect(onPreviewStart).toHaveBeenCalledOnce();
     expect(screen.getByRole('button', { name: 'MP4として保存' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'プレビューを停止' })).toBeEnabled();
+  });
+
+  it('範囲プレビュー中は現在時刻の同期で開始位置を上書きしない', async () => {
+    const user = userEvent.setup();
+    const panel = renderPanel({
+      audio: createAudio({
+        file: new File(['audio'], 'sample.wav', { type: 'audio/wav' }),
+        buffer: { duration: 120 } as AudioBuffer,
+      }),
+    });
+
+    await user.click(screen.getByRole('tab', { name: '動画' }));
+    await user.click(screen.getByRole('button', { name: '動画をプレビュー' }));
+    expect(screen.getByLabelText('動画開始位置（m:ss）')).toHaveValue('1:20');
+
+    panel.rerender({ currentTime: 90, frameState: { ...frameState, currentTime: 90 } });
+    expect(screen.getByLabelText('動画開始位置（m:ss）')).toHaveValue('1:20');
   });
 
   it('エンコーダー非対応の失敗を表示し、同じ入力で再試行できる', async () => {
