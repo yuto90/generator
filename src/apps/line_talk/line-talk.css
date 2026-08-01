@@ -12,7 +12,7 @@
   --line-sent-text: #14321a;
   --line-accent: #8bdc57;
   min-height: 100%;
-  padding: 48px 36px;
+  padding: 48px 24px;
   background:
     radial-gradient(circle at 18% 12%, rgba(86, 165, 126, 0.12), transparent 33%),
     radial-gradient(circle at 88% 88%, rgba(73, 116, 159, 0.12), transparent 34%),
@@ -54,9 +54,9 @@
 
 .line-talk-layout {
   display: grid;
-  grid-template-columns: minmax(420px, 1fr) minmax(320px, 380px);
+  grid-template-columns: minmax(390px, 1fr) minmax(300px, 350px);
   align-items: start;
-  gap: clamp(30px, 6vw, 82px);
+  gap: clamp(24px, 4vw, 64px);
   width: min(1120px, 100%);
   margin: 0 auto;
 }
@@ -527,15 +527,30 @@
   line-height: 1.4;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .app-line-talk {
-    padding-right: 22px;
-    padding-left: 22px;
+    padding: 36px 22px;
   }
 
   .line-talk-layout {
-    gap: 28px;
-    grid-template-columns: minmax(390px, 1fr) minmax(300px, 350px);
+    display: flex;
+    width: min(520px, 100%);
+    flex-direction: column;
+    align-items: stretch;
+    gap: 24px;
+  }
+
+  .line-talk-preview-column {
+    width: 100%;
+  }
+
+  .line-talk-preview {
+    width: min(390px, 100%);
+  }
+
+  .line-talk-editor {
+    max-height: none;
+    overflow: visible;
   }
 }
 
