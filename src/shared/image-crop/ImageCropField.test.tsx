@@ -6,8 +6,8 @@ import { createEditableImage, type EditableImage } from './image-crop';
 import ImageCropField from './ImageCropField';
 
 vi.mock('react-image-crop', () => ({
-  default: ({ children, onComplete }: { children: ReactNode; onComplete?: (crop: unknown, percentCrop: unknown) => void }) => (
-    <div data-testid="react-crop">
+  default: ({ children, aspect, onComplete }: { children: ReactNode; aspect?: number; onComplete?: (crop: unknown, percentCrop: unknown) => void }) => (
+    <div data-testid="react-crop" data-aspect={aspect ?? ''}>
       {children}
       <button
         type="button"
@@ -83,6 +83,44 @@ describe('ImageCropField', () => {
     expect(screen.getByRole('button', { name: '黒' })).toHaveAttribute('aria-pressed', 'false');
   });
 
+  test('枠いっぱいにするをONにすると対象比率固定になり、完了でcoverを返す', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<ImageCropField {...defaultProps} value={createEditableImage('source', 'source')} onChange={onChange} />);
+
+    await user.click(screen.getByRole('button', { name: 'トリミングを調整' }));
+    const image = screen.getByRole('img', { name: 'Cover Imageのトリミング対象' });
+    Object.defineProperty(image, 'naturalWidth', { configurable: true, value: 100 });
+    Object.defineProperty(image, 'naturalHeight', { configurable: true, value: 100 });
+    Object.defineProperty(image, 'width', { configurable: true, value: 100 });
+    Object.defineProperty(image, 'height', { configurable: true, value: 100 });
+    fireEvent.load(image);
+
+    const lockButton = screen.getByRole('button', { name: '枠いっぱいにする' });
+    expect(lockButton).toHaveAttribute('aria-pressed', 'false');
+    await user.click(lockButton);
+    expect(lockButton).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('プレビュー枠と同じ比率で固定中')).toBeInTheDocument();
+    expect(screen.getByTestId('react-crop')).toHaveAttribute('data-aspect', '1');
+
+    await user.click(screen.getByTestId('mock-crop-complete'));
+    await waitFor(() => expect(screen.getByRole('button', { name: '完了' })).toBeEnabled());
+    await user.click(screen.getByRole('button', { name: '完了' }));
+
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
+      fit: 'cover',
+      cropAspectLocked: true,
+    }));
+  });
+
+  test('保存済みの固定状態を再編集時に復元する', async () => {
+    render(<ImageCropField {...defaultProps} value={{ ...createEditableImage('source', 'source'), cropAspectLocked: true }} />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'トリミングを調整' }));
+
+    expect(screen.getByRole('button', { name: '枠いっぱいにする' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
   test('キャンセルでは編集前の値を変更しない', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
@@ -127,6 +165,7 @@ describe('ImageCropField', () => {
       originalSrc: 'source',
       displaySrc: 'data:image/png;base64,cropped',
       fit: 'contain',
+      cropAspectLocked: false,
       matteColor: 'black',
     }));
   });

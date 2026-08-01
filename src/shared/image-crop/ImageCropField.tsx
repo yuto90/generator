@@ -4,6 +4,7 @@ import {
   centerAspectCrop,
   cropImageToDataUrl,
   createEditableImage,
+  fitCropToAspect,
   getEditableImageStyle,
   percentCropToPixelCrop,
   type EditableImage,
@@ -43,6 +44,7 @@ export default function ImageCropField({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [draftCrop, setDraftCrop] = useState<PercentCrop>();
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
+  const [draftAspectLocked, setDraftAspectLocked] = useState(value.cropAspectLocked ?? false);
   const [draftMatte, setDraftMatte] = useState<ImageMatteColor>(value.matteColor);
   const [previewSrc, setPreviewSrc] = useState(value.displaySrc);
   const [generating, setGenerating] = useState(false);
@@ -73,6 +75,7 @@ export default function ImageCropField({
     if (!value.originalSrc) return;
     setDraftCrop(value.crop);
     setCompletedCrop(undefined);
+    setDraftAspectLocked(value.cropAspectLocked ?? false);
     setDraftMatte(value.matteColor);
     setPreviewSrc(value.displaySrc);
     setDialogError('');
@@ -120,7 +123,10 @@ export default function ImageCropField({
       return;
     }
 
-    const nextCrop = draftCrop ?? centerAspectCrop(image.naturalWidth, image.naturalHeight, targetAspect);
+    const initialCrop = draftCrop ?? centerAspectCrop(image.naturalWidth, image.naturalHeight, targetAspect);
+    const nextCrop = draftAspectLocked
+      ? fitCropToAspect(initialCrop, size.width, size.height, targetAspect)
+      : initialCrop;
     setDraftCrop(nextCrop);
     const pixelCrop = percentCropToPixelCrop(nextCrop, size.width, size.height);
     setCompletedCrop(pixelCrop);
@@ -135,6 +141,27 @@ export default function ImageCropField({
     setDraftCrop(percentCrop);
     setCompletedCrop(pixelCrop);
     if (imageRef.current) void updatePreview(imageRef.current, pixelCrop);
+  }
+
+  function handleAspectLockToggle() {
+    const nextLocked = !draftAspectLocked;
+    setDraftAspectLocked(nextLocked);
+    if (!nextLocked || !imageRef.current) return;
+
+    const image = imageRef.current;
+    const size = renderedSize(image);
+    if (size.width <= 0 || size.height <= 0) return;
+
+    const initialCrop = draftCrop ?? centerAspectCrop(
+      image.naturalWidth || size.width,
+      image.naturalHeight || size.height,
+      targetAspect,
+    );
+    const nextCrop = fitCropToAspect(initialCrop, size.width, size.height, targetAspect);
+    const pixelCrop = percentCropToPixelCrop(nextCrop, size.width, size.height);
+    setDraftCrop(nextCrop);
+    setCompletedCrop(pixelCrop);
+    void updatePreview(image, pixelCrop);
   }
 
   function resetCrop() {
@@ -161,8 +188,9 @@ export default function ImageCropField({
         ...value,
         originalSrc: source,
         displaySrc,
-        fit: 'contain',
+        fit: draftAspectLocked ? 'cover' : 'contain',
         crop: draftCrop,
+        cropAspectLocked: draftAspectLocked,
         matteColor: draftMatte,
       });
       closeEditor();
@@ -199,7 +227,7 @@ export default function ImageCropField({
   const previewImage: EditableImage = {
     ...value,
     displaySrc: previewSrc,
-    fit: 'contain',
+    fit: draftAspectLocked ? 'cover' : 'contain',
     matteColor: draftMatte,
   };
 
@@ -251,6 +279,7 @@ export default function ImageCropField({
               {value.originalSrc && (
                 <ReactCrop
                   crop={draftCrop}
+                  aspect={draftAspectLocked ? targetAspect : undefined}
                   minWidth={32}
                   minHeight={32}
                   keepSelection
@@ -273,6 +302,19 @@ export default function ImageCropField({
             />
           </div>
         </div>
+
+        <fieldset className="image-crop-dialog__aspect-mode">
+          <legend>表示比率</legend>
+          <button
+            type="button"
+            aria-pressed={draftAspectLocked}
+            className={draftAspectLocked ? 'is-selected' : ''}
+            onClick={handleAspectLockToggle}
+          >
+            枠いっぱいにする
+          </button>
+          {draftAspectLocked && <span className="image-crop-dialog__aspect-status">プレビュー枠と同じ比率で固定中</span>}
+        </fieldset>
 
         <fieldset className="image-crop-dialog__matte">
           <legend>余白の色</legend>
