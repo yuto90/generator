@@ -27,6 +27,7 @@ npm run dev
 - youtube_music_player: http://localhost:5173/#/youtube_music_player
 - spotify_player: http://localhost:5173/#/spotify_player
 - instagram_reel: http://localhost:5173/#/instagram_reel
+- line_talk: http://localhost:5173/#/line_talk
 
 ## ビルドとテスト
 

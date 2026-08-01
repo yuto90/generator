@@ -8,6 +8,7 @@ import MusicPlayerApp from './music_player/MusicPlayerApp';
 import AppleMusicPlayerApp from './apple_music_player/AppleMusicPlayerApp';
 import YoutubeMusicPlayerApp from './youtube_music_player/YoutubeMusicPlayerApp';
 import InstagramReelApp from './instagram_reel/InstagramReelApp';
+import LineTalkApp from './line_talk/LineTalkApp';
 
 const captureSnap = vi.hoisted(() => vi.fn());
 const download = vi.hoisted(() => vi.fn<() => Promise<void>>());
@@ -142,6 +143,7 @@ describe('画像保存ボタン', () => {
     ['YoutubeMusicPlayerApp', () => <YoutubeMusicPlayerApp />],
     ['InstagramReelApp', () => <InstagramReelApp />],
     ['SpotifyPlayerApp', () => <SpotifyPlayerApp />],
+    ['LineTalkApp', () => <LineTalkApp />],
   ])('%sは保存中の再押下を無効化する', async (_name, createApp) => {
     let resolveDownload!: () => void;
     const downloadPromise = new Promise<void>(resolve => { resolveDownload = resolve; });
