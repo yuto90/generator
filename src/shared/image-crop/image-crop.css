@@ -86,7 +86,8 @@
 
 .image-crop-dialog__header,
 .image-crop-dialog__actions,
-.image-crop-dialog__matte {
+.image-crop-dialog__matte,
+.image-crop-dialog__aspect-mode {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -160,6 +161,42 @@
   background-size: contain;
 }
 
+.image-crop-dialog__aspect-mode {
+  margin: 0 18px;
+  padding: 12px 0;
+  border: 0;
+  border-top: 1px solid rgba(127, 127, 127, 0.2);
+}
+
+.image-crop-dialog__aspect-mode legend {
+  padding: 0;
+  font-size: 11px;
+  opacity: 0.72;
+}
+
+.image-crop-dialog__aspect-mode button {
+  min-width: 112px;
+  padding: 6px 10px;
+  border: 1px solid rgba(127, 127, 127, 0.35);
+  border-radius: 7px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+}
+
+.image-crop-dialog__aspect-mode button.is-selected {
+  border-color: #6254d8;
+  background: rgba(98, 84, 216, 0.16);
+  box-shadow: 0 0 0 2px rgba(98, 84, 216, 0.2);
+}
+
+.image-crop-dialog__aspect-status {
+  font-size: 11px;
+  opacity: 0.72;
+}
+
 .image-crop-dialog__matte {
   margin: 0 18px;
   padding: 12px 0;
@@ -224,6 +261,10 @@
   }
 
   .image-crop-dialog__matte {
+    margin: 0 12px;
+  }
+
+  .image-crop-dialog__aspect-mode {
     margin: 0 12px;
   }
 
