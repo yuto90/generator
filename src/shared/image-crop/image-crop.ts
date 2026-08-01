@@ -10,6 +10,7 @@ export interface EditableImage {
   displaySrc: string;
   fit: 'cover' | 'contain';
   crop?: PercentCrop;
+  cropAspectLocked?: boolean;
   matteColor: ImageMatteColor;
 }
 
@@ -21,6 +22,7 @@ export function createEditableImage(displaySrc: string, originalSrc: string | nu
     originalSrc,
     displaySrc,
     fit: 'cover',
+    cropAspectLocked: false,
     matteColor: 'black',
   };
 }
@@ -57,6 +59,42 @@ export function percentCropToPixelCrop(crop: PercentCrop | PixelCrop, width: num
     y: Math.round((crop.y / 100) * height),
     width: Math.round((crop.width / 100) * width),
     height: Math.round((crop.height / 100) * height),
+  };
+}
+
+export function fitCropToAspect(crop: PercentCrop, width: number, height: number, aspect: number): PercentCrop {
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0 || !Number.isFinite(aspect) || aspect <= 0) {
+    return centerAspectCrop(width, height, aspect);
+  }
+
+  const pixelCrop = percentCropToPixelCrop(crop, width, height);
+  const currentWidth = Math.min(width, Math.max(0, pixelCrop.width));
+  const currentHeight = Math.min(height, Math.max(0, pixelCrop.height));
+  if (currentWidth <= 0 || currentHeight <= 0) {
+    return centerAspectCrop(width, height, aspect);
+  }
+
+  const centerX = pixelCrop.x + pixelCrop.width / 2;
+  const centerY = pixelCrop.y + pixelCrop.height / 2;
+  let cropWidth = currentWidth;
+  let cropHeight = currentHeight;
+  if (cropWidth / cropHeight > aspect) {
+    cropWidth = cropHeight * aspect;
+  } else {
+    cropHeight = cropWidth / aspect;
+  }
+
+  let x = centerX - cropWidth / 2;
+  let y = centerY - cropHeight / 2;
+  x = Math.max(0, Math.min(width - cropWidth, x));
+  y = Math.max(0, Math.min(height - cropHeight, y));
+
+  return {
+    unit: '%',
+    x: (x / width) * 100,
+    y: (y / height) * 100,
+    width: (cropWidth / width) * 100,
+    height: (cropHeight / height) * 100,
   };
 }
 

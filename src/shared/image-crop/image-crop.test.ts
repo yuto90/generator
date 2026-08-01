@@ -3,6 +3,7 @@ import {
   centerAspectCrop,
   cropImageToDataUrl,
   createEditableImage,
+  fitCropToAspect,
   getEditableImageStyle,
   percentCropToPixelCrop,
   type PercentCrop,
@@ -25,6 +26,7 @@ describe('image crop utilities', () => {
       displaySrc: 'default',
       fit: 'cover',
       matteColor: 'black',
+      cropAspectLocked: false,
     });
   });
 
@@ -51,6 +53,28 @@ describe('image crop utilities', () => {
       width: 200,
       height: 50,
     });
+  });
+
+  test('選択範囲の中心を保ったまま対象比率へ変換する', () => {
+    expect(fitCropToAspect(
+      { unit: '%', x: 10, y: 20, width: 60, height: 30 },
+      1000,
+      1000,
+      1,
+    )).toEqual({ unit: '%', x: 25, y: 20, width: 30, height: 30 });
+  });
+
+  test('比率変換後の範囲を画像境界内へ収める', () => {
+    const crop = fitCropToAspect(
+      { unit: '%', x: 70, y: 10, width: 30, height: 80 },
+      1600,
+      900,
+      9 / 16,
+    );
+    expect(crop.x).toBeGreaterThanOrEqual(0);
+    expect(crop.y).toBeGreaterThanOrEqual(0);
+    expect(crop.x + crop.width).toBeLessThanOrEqual(100);
+    expect(crop.y + crop.height).toBeLessThanOrEqual(100);
   });
 
   test('無効な比率や画像サイズでは中央選択を安全に返す', () => {
