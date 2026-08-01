@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { useCapture } from '../../shared/capture/useCapture';
+import ImageCropField from '../../shared/image-crop/ImageCropField';
+import { createEditableImage, getEditableImageStyle } from '../../shared/image-crop/image-crop';
 import { calculateProgress, formatTime, parseTime } from '../../shared/player/player-utils';
 import { ThemeToggle } from '../../shared/theme/ThemeToggle';
 import { useYouTubePlayer } from '../../shared/youtube/useYouTubePlayer';
@@ -28,13 +30,12 @@ const DEFAULT_COVER = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
 </svg>`);
 
 interface FormErrors {
-  image: string;
   current: string;
   duration: string;
   youtube: string;
 }
 
-const NO_ERRORS: FormErrors = { image: '', current: '', duration: '', youtube: '' };
+const NO_ERRORS: FormErrors = { current: '', duration: '', youtube: '' };
 
 interface Status {
   text: string;
@@ -49,13 +50,13 @@ export default function SpotifyPlayerApp() {
   const [durationText, setDurationText] = useState('3:30');
   const [youtubeText, setYoutubeText] = useState('');
   const [errors, setErrors] = useState<FormErrors>(NO_ERRORS);
-  const uploadedImageRef = useRef<string>(DEFAULT_COVER);
+  const [coverImage, setCoverImage] = useState(() => createEditableImage(DEFAULT_COVER));
 
   // ---- 適用済みプレビュー ----
   const [applied, setApplied] = useState({
     title: '曲のタイトル',
     artist: 'アーティスト名',
-    cover: DEFAULT_COVER,
+    cover: createEditableImage(DEFAULT_COVER),
   });
   const staticTimeRef = useRef({ current: 0, duration: 210 });
   const [time, setTime] = useState({ current: 0, duration: 210 });
@@ -134,7 +135,7 @@ export default function SpotifyPlayerApp() {
   }, [yt.ready, yt]);
 
   function validateForm() {
-    const nextErrors: FormErrors = { ...NO_ERRORS, image: errors.image };
+    const nextErrors: FormErrors = { ...NO_ERRORS };
     const current = parseTime(currentText);
     const duration = parseTime(durationText);
     const youtubeValue = youtubeText.trim();
@@ -178,7 +179,7 @@ export default function SpotifyPlayerApp() {
     if (!values) return;
 
     staticTimeRef.current = { current: values.current, duration: values.duration };
-    setApplied({ title: values.title, artist: values.artist, cover: uploadedImageRef.current });
+    setApplied({ title: values.title, artist: values.artist, cover: coverImage });
     setTime({ current: values.current, duration: values.duration });
     setPlaying(false);
 
@@ -194,26 +195,6 @@ export default function SpotifyPlayerApp() {
       yt.stop();
       setStatus({ text: '静的プレビューモード', tone: '' });
     }
-  }
-
-  function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    setErrors(prev => ({ ...prev, image: '' }));
-    if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      setErrors(prev => ({ ...prev, image: '画像ファイルを選択してください' }));
-      event.target.value = '';
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      uploadedImageRef.current = String(reader.result);
-    };
-    reader.onerror = () => {
-      setErrors(prev => ({ ...prev, image: '画像を読み込めませんでした' }));
-    };
-    reader.readAsDataURL(file);
   }
 
   function handlePlayClick() {
@@ -288,7 +269,7 @@ export default function SpotifyPlayerApp() {
               id="cover-img"
               role="img"
               aria-label="アートワーク"
-              style={{ backgroundImage: `url("${applied.cover}")` }}
+              style={getEditableImageStyle(applied.cover)}
             />
 
             <div className="track-row">
@@ -405,11 +386,13 @@ export default function SpotifyPlayerApp() {
                 onChange={event => setArtist(event.target.value)}
               />
             </div>
-            <div>
-              <label className="field-label" htmlFor="in-image">Artwork</label>
-              <input className="file-input" id="in-image" type="file" accept="image/*" onChange={handleImageChange} />
-              <p className="field-error" id="error-image" aria-live="polite">{errors.image}</p>
-            </div>
+            <ImageCropField
+              id="in-image"
+              label="Artwork"
+              value={coverImage}
+              targetAspect={1}
+              onChange={setCoverImage}
+            />
             <div className="time-fields">
               <div>
                 <label className="field-label" htmlFor="in-current-time">Position</label>

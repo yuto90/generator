@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent, type CSSProperties } from 'react';
 import { useCapture } from '../../shared/capture/useCapture';
+import ImageCropField from '../../shared/image-crop/ImageCropField';
+import { createEditableImage, getEditableImageStyle, type EditableImage } from '../../shared/image-crop/image-crop';
 import { ThemeToggle } from '../../shared/theme/ThemeToggle';
 import { useTheme } from '../../shared/theme/ThemeContext';
 import { useYouTubePlayer } from '../../shared/youtube/useYouTubePlayer';
@@ -33,7 +35,7 @@ interface AppliedCard {
   title: string;
   artist: string;
   copyright: string;
-  cover: string;
+  cover: EditableImage;
   bgColor: string;
   pointColor: string;
   textColor: string;
@@ -48,14 +50,14 @@ export default function MusicPlayerApp() {
   const [copyright, setCopyright] = useState('');
   const [youtube, setYoutube] = useState('');
   const [colors, setColors] = useState(THEME_COLORS.dark);
-  const uploadedImageRef = useRef<string | null>(null);
+  const [coverImage, setCoverImage] = useState(() => createEditableImage(DEFAULT_COVER));
 
   // ---- 適用済みプレビュー ----
   const [applied, setApplied] = useState<AppliedCard>({
     title: '曲のタイトル',
     artist: 'アーティスト名',
     copyright: 'ⓒ 出典',
-    cover: DEFAULT_COVER,
+    cover: createEditableImage(DEFAULT_COVER),
     ...THEME_COLORS.dark,
   });
   const [playing, setPlaying] = useState(false);
@@ -89,7 +91,7 @@ export default function MusicPlayerApp() {
       title: title || '曲のタイトル',
       artist: artist || 'アーティスト名',
       copyright: copyright || 'ⓒ 出典',
-      cover: uploadedImageRef.current || DEFAULT_COVER,
+      cover: coverImage,
       bgColor: nextColors.bgColor,
       pointColor: nextColors.pointColor,
       textColor: nextColors.textColor,
@@ -109,14 +111,6 @@ export default function MusicPlayerApp() {
     setColors(nextColors);
     applyPreviewRef.current(nextColors);
   }, [theme]);
-
-  function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => { uploadedImageRef.current = String(reader.result); };
-    reader.readAsDataURL(file);
-  }
 
   function handlePlayClick() {
     if (!yt.ready) {
@@ -176,7 +170,7 @@ export default function MusicPlayerApp() {
               <div
                 id="cover-img"
                 className="absolute inset-0 h-full w-full bg-cover bg-center bg-no-repeat"
-                style={{ backgroundImage: `url('${applied.cover}')` }}
+                style={getEditableImageStyle(applied.cover)}
               />
               {/* Subtle overlay gradient at bottom */}
               <div
@@ -286,10 +280,13 @@ export default function MusicPlayerApp() {
               <label className="field-label" htmlFor="in-artist">Artist</label>
               <input className="field-input" type="text" id="in-artist" placeholder="アーティスト名" value={artist} onChange={e => setArtist(e.target.value)} />
             </div>
-            <div>
-              <label className="field-label" htmlFor="in-image">Cover Image</label>
-              <input className="file-input" type="file" id="in-image" accept="image/*" onChange={handleImageChange} />
-            </div>
+            <ImageCropField
+              id="in-image"
+              label="Cover Image"
+              value={coverImage}
+              targetAspect={1}
+              onChange={setCoverImage}
+            />
             <div>
               <label className="field-label" htmlFor="in-youtube">YouTube URL</label>
               <input className="field-input" type="text" id="in-youtube" placeholder="例: https://www.youtube.com/watch?v=w2-uvGZCe3g" value={youtube} onChange={e => setYoutube(e.target.value)} />

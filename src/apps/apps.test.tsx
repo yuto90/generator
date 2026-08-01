@@ -37,6 +37,7 @@ describe('SpotifyPlayerApp', () => {
     for (const label of ['Title', 'Artist', 'Artwork', 'Position', 'Duration', 'YouTube URL']) {
       expect(screen.getByLabelText(label)).toBeInTheDocument();
     }
+    expect(screen.getByRole('button', { name: 'トリミングを調整' })).toBeDisabled();
     expect(screen.getByRole('button', { name: '適用してプレビュー' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '画像として保存' })).toBeInTheDocument();
     expect(screen.getByText('静的プレビューモード')).toBeInTheDocument();
@@ -76,6 +77,21 @@ describe('MusicPlayerApp', () => {
     expect(document.getElementById('song-title')).toHaveTextContent('グラスの曲');
     expect(document.getElementById('player-card')).not.toBeNull();
     expect(screen.getByRole('button', { name: '再生と一時停止' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'トリミングを調整' })).toBeDisabled();
+  });
+
+  test('画像をアップロードして適用しても未調整なら中央coverを維持する', async () => {
+    const user = userEvent.setup();
+    renderApp(<MusicPlayerApp />);
+
+    await user.upload(
+      screen.getByLabelText('Cover Image'),
+      new File(['image'], 'cover.png', { type: 'image/png' }),
+    );
+    await waitFor(() => expect(screen.getByRole('button', { name: 'トリミングを調整' })).toBeEnabled());
+    await user.click(screen.getByRole('button', { name: '適用してプレビュー' }));
+
+    expect(document.getElementById('cover-img')).toHaveStyle({ backgroundSize: 'cover' });
   });
 });
 
@@ -86,6 +102,7 @@ describe('AppleMusicPlayerApp', () => {
     const bgPicker = document.getElementById('in-bg-color') as HTMLInputElement;
     expect(bgPicker.value).toBe('#8e3b52');
     expect(document.getElementById('copyright-text')).toHaveTextContent('ⓒ 出典');
+    expect(screen.getByRole('button', { name: 'トリミングを調整' })).toBeDisabled();
   });
 });
 
@@ -96,6 +113,7 @@ describe('YoutubeMusicPlayerApp', () => {
     const bgPicker = document.getElementById('in-bg-color') as HTMLInputElement;
     expect(bgPicker.value).toBe('#030303');
     expect(document.getElementById('time-total')).toHaveTextContent('-:--');
+    expect(screen.getByRole('button', { name: 'トリミングを調整' })).toBeDisabled();
   });
 });
 
