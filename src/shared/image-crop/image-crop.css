@@ -1,0 +1,232 @@
+.image-crop-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.image-crop-field__label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.image-crop-field__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.image-crop-field__adjust,
+.image-crop-dialog__reset,
+.image-crop-dialog__cancel,
+.image-crop-dialog__complete,
+.image-crop-dialog__matte button,
+.image-crop-dialog__close {
+  border: 1px solid rgba(127, 127, 127, 0.35);
+  border-radius: 7px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+.image-crop-field__adjust {
+  padding: 6px 10px;
+  font-size: 11px;
+}
+
+.image-crop-field__adjust:disabled,
+.image-crop-dialog__reset:disabled,
+.image-crop-dialog__complete:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.image-crop-field__status {
+  color: #43a047;
+  font-size: 11px;
+}
+
+.image-crop-field__help,
+.image-crop-field__error {
+  margin: 0;
+  font-size: 11px;
+}
+
+.image-crop-field__help {
+  opacity: 0.65;
+}
+
+.image-crop-field__error,
+.image-crop-dialog__error {
+  min-height: 1.2em;
+  color: #e57373;
+}
+
+.image-crop-dialog {
+  width: min(760px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  margin: auto;
+  padding: 0;
+  overflow: auto;
+  border: 1px solid rgba(127, 127, 127, 0.35);
+  border-radius: 14px;
+  background: var(--gen-panel-bg, #24242a);
+  color: var(--gen-panel-text, #f7f7fa);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+}
+
+.image-crop-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.68);
+}
+
+.image-crop-dialog__header,
+.image-crop-dialog__actions,
+.image-crop-dialog__matte {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 18px;
+}
+
+.image-crop-dialog__header {
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(127, 127, 127, 0.2);
+}
+
+.image-crop-dialog__header h2 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.image-crop-dialog__close {
+  width: 28px;
+  height: 28px;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.image-crop-dialog__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(180px, 0.65fr);
+  gap: 16px;
+  padding: 18px;
+}
+
+.image-crop-dialog__crop-surface {
+  max-height: 55vh;
+  overflow: auto;
+  padding: 12px;
+  border-radius: 10px;
+  background: #111;
+  touch-action: none;
+}
+
+.image-crop-dialog__crop-surface .ReactCrop {
+  max-width: 100%;
+}
+
+.image-crop-dialog__crop-surface img {
+  display: block;
+  max-width: 100%;
+  max-height: 52vh;
+  object-fit: contain;
+}
+
+.image-crop-dialog__hint,
+.image-crop-dialog__section-label,
+.image-crop-dialog__matte legend {
+  margin: 8px 0 0;
+  font-size: 11px;
+  opacity: 0.72;
+}
+
+.image-crop-dialog__preview-wrap {
+  min-width: 0;
+}
+
+.image-crop-dialog__preview {
+  width: 100%;
+  max-height: 360px;
+  margin-top: 8px;
+  border-radius: 8px;
+  background-color: #000;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+}
+
+.image-crop-dialog__matte {
+  margin: 0 18px;
+  padding: 12px 0;
+  border: 0;
+  border-top: 1px solid rgba(127, 127, 127, 0.2);
+}
+
+.image-crop-dialog__matte legend {
+  padding: 0;
+}
+
+.image-crop-dialog__matte button {
+  min-width: 48px;
+  padding: 6px 10px;
+  font-size: 11px;
+}
+
+.image-crop-dialog__matte button.is-selected {
+  border-color: currentColor;
+  box-shadow: 0 0 0 2px rgba(127, 127, 127, 0.25);
+}
+
+.image-crop-dialog__error {
+  margin: 0 18px 4px;
+  font-size: 12px;
+}
+
+.image-crop-dialog__actions {
+  justify-content: flex-end;
+  border-top: 1px solid rgba(127, 127, 127, 0.2);
+}
+
+.image-crop-dialog__actions button {
+  min-height: 34px;
+  padding: 7px 13px;
+  font-size: 12px;
+}
+
+.image-crop-dialog__complete {
+  border-color: #6254d8;
+  background: #6254d8;
+  color: #fff;
+}
+
+@media (max-width: 640px) {
+  .image-crop-dialog {
+    width: calc(100vw - 16px);
+    max-height: calc(100vh - 16px);
+  }
+
+  .image-crop-dialog__body {
+    grid-template-columns: 1fr;
+    padding: 12px;
+  }
+
+  .image-crop-dialog__crop-surface {
+    max-height: 48vh;
+  }
+
+  .image-crop-dialog__preview {
+    max-height: 220px;
+  }
+
+  .image-crop-dialog__matte {
+    margin: 0 12px;
+  }
+
+  .image-crop-dialog__actions {
+    flex-wrap: wrap;
+    padding: 12px;
+  }
+}
