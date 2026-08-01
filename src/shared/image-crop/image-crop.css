@@ -79,7 +79,9 @@
 }
 
 .image-crop-dialog::backdrop {
-  background: rgba(0, 0, 0, 0.68);
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .image-crop-dialog__header,
