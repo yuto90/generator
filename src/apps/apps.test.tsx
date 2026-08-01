@@ -122,6 +122,11 @@ describe('InstagramReelApp', () => {
     const user = userEvent.setup();
     renderApp(<InstagramReelApp />);
 
+    expect(screen.getByLabelText('Background Image')).toBeInTheDocument();
+    expect(screen.getByLabelText('Icon Image')).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'トリミングを調整' })).toHaveLength(2);
+    expect(screen.getAllByRole('button', { name: 'トリミングを調整' }).every(button => (button as HTMLButtonElement).disabled)).toBe(true);
+
     await user.type(screen.getByLabelText('Username'), 'claude_dev');
     await user.click(screen.getByRole('button', { name: '適用してプレビュー' }));
 

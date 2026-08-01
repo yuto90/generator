@@ -1,5 +1,7 @@
-import { useRef, useState, type ChangeEvent } from 'react';
+import { useRef, useState } from 'react';
 import { useCapture } from '../../shared/capture/useCapture';
+import ImageCropField from '../../shared/image-crop/ImageCropField';
+import { createEditableImage, getEditableImageStyle, type EditableImage } from '../../shared/image-crop/image-crop';
 import { ThemeToggle } from '../../shared/theme/ThemeToggle';
 import './instagram-reel.css';
 
@@ -34,8 +36,8 @@ interface ReelContent {
   likes: string;
   comments: string;
   shares: string;
-  bg: string;
-  avatar: string;
+  bg: EditableImage;
+  avatar: EditableImage;
 }
 
 const DEFAULT_CONTENT: ReelContent = {
@@ -45,8 +47,8 @@ const DEFAULT_CONTENT: ReelContent = {
   likes: '1.2万',
   comments: '345',
   shares: '67',
-  bg: DEFAULT_BG,
-  avatar: DEFAULT_AVATAR,
+  bg: createEditableImage(DEFAULT_BG),
+  avatar: createEditableImage(DEFAULT_AVATAR),
 };
 
 export default function InstagramReelApp() {
@@ -56,23 +58,13 @@ export default function InstagramReelApp() {
   const [likes, setLikes] = useState('');
   const [comments, setComments] = useState('');
   const [shares, setShares] = useState('');
-  const uploadedBgRef = useRef(DEFAULT_BG);
-  const uploadedAvatarRef = useRef(DEFAULT_AVATAR);
+  const [bgImage, setBgImage] = useState(() => createEditableImage(DEFAULT_BG));
+  const [avatarImage, setAvatarImage] = useState(() => createEditableImage(DEFAULT_AVATAR));
 
   const [applied, setApplied] = useState<ReelContent>(DEFAULT_CONTENT);
 
   const cardRef = useRef<HTMLDivElement | null>(null);
   const { capture, capturing } = useCapture();
-
-  function bindImage(onLoad: (src: string) => void) {
-    return (event: ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => onLoad(String(reader.result));
-      reader.readAsDataURL(file);
-    };
-  }
 
   function applyPreview() {
     const nextUsername = username || 'username';
@@ -83,8 +75,8 @@ export default function InstagramReelApp() {
       likes: likes || '1.2万',
       comments: comments || '345',
       shares: shares || '67',
-      bg: uploadedBgRef.current,
-      avatar: uploadedAvatarRef.current,
+      bg: bgImage,
+      avatar: avatarImage,
     });
   }
 
@@ -103,7 +95,7 @@ export default function InstagramReelApp() {
         <div id="capture-area" className="flex w-full justify-center max-md:w-auto">
           <div className="reel-card" id="reel-card" ref={cardRef}>
 
-            <div className="reel-bg" id="reel-bg" style={{ backgroundImage: `url('${applied.bg}')` }} />
+            <div className="reel-bg" id="reel-bg" style={getEditableImageStyle(applied.bg)} />
             <div className="reel-scrim-top" />
             <div className="reel-scrim-bottom" />
 
@@ -142,13 +134,13 @@ export default function InstagramReelApp() {
                   <circle cx="5" cy="12" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="19" cy="12" r="1.7" />
                 </svg>
               </div>
-              <div className="rail-audio" id="rail-audio" style={{ backgroundImage: `url('${applied.avatar}')` }} />
+              <div className="rail-audio" id="rail-audio" style={getEditableImageStyle(applied.avatar)} />
             </div>
 
             {/* Bottom info */}
             <div className="reel-bottom">
               <div className="reel-user">
-                <div className="reel-avatar" id="avatar-img" style={{ backgroundImage: `url('${applied.avatar}')` }} />
+                <div className="reel-avatar" id="avatar-img" style={getEditableImageStyle(applied.avatar)} />
                 <span className="reel-username" id="reel-username">{applied.username}</span>
               </div>
               <div className="reel-caption" id="reel-caption">{applied.caption}</div>
@@ -175,27 +167,21 @@ export default function InstagramReelApp() {
           </div>
 
           <div className="flex flex-col gap-4">
-            <div>
-              <label className="field-label" htmlFor="in-bg-image">Background Image</label>
-              <input
-                className="file-input"
-                type="file"
-                id="in-bg-image"
-                accept="image/*"
-                onChange={bindImage(src => { uploadedBgRef.current = src; })}
-              />
-              <p className="help-text text-[11px] mt-1.5">9:16 に収まるよう中央でトリミングされます</p>
-            </div>
-            <div>
-              <label className="field-label" htmlFor="in-avatar-image">Icon Image</label>
-              <input
-                className="file-input"
-                type="file"
-                id="in-avatar-image"
-                accept="image/*"
-                onChange={bindImage(src => { uploadedAvatarRef.current = src; })}
-              />
-            </div>
+            <ImageCropField
+              id="in-bg-image"
+              label="Background Image"
+              value={bgImage}
+              targetAspect={9 / 16}
+              onChange={setBgImage}
+              helpText="範囲を調整して9:16の背景へ反映できます"
+            />
+            <ImageCropField
+              id="in-avatar-image"
+              label="Icon Image"
+              value={avatarImage}
+              targetAspect={1}
+              onChange={setAvatarImage}
+            />
             <div>
               <label className="field-label" htmlFor="in-username">Username</label>
               <input className="field-input" type="text" id="in-username" placeholder="ユーザー名" value={username} onChange={e => setUsername(e.target.value)} />
