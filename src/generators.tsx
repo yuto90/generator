@@ -22,6 +22,13 @@ const musicIcon = (
   </svg>
 );
 
+const lineTalkIcon = (
+  <svg viewBox="0 0 24 24">
+    <path d="M5 4h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-7l-4.5 3V17H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinejoin="round" />
+    <path d="M7 9.2h10M7 12.7h6" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" />
+  </svg>
+);
+
 export const GENERATORS: GeneratorDef[] = [
   {
     id: 'music_player',
@@ -83,5 +90,14 @@ export const GENERATORS: GeneratorDef[] = [
       </svg>
     ),
     Component: lazy(() => import('./apps/instagram_reel/InstagramReelApp')),
+  },
+  {
+    id: 'line_talk',
+    name: 'LINEトーク',
+    desc: 'トーク画面風メッセージ',
+    title: 'LINE talk generator',
+    color: 'linear-gradient(135deg, #8bdb5e, #3f9861)',
+    icon: lineTalkIcon,
+    Component: lazy(() => import('./apps/line_talk/LineTalkApp')),
   },
 ];
