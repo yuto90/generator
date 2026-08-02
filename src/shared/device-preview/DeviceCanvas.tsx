@@ -9,13 +9,31 @@ export interface DeviceCanvasProps {
 }
 
 function getAvailableSize(element: HTMLElement | null): DeviceSize {
+  const slot = element?.closest<HTMLElement>('[data-device-preview-slot]');
   const stage = element?.closest<HTMLElement>('[data-device-preview-stage]');
   const parent = element?.parentElement;
-  const rect = stage?.getBoundingClientRect() ?? parent?.getBoundingClientRect();
-  const toolbar = parent?.querySelector<HTMLElement>('[data-device-toolbar]');
+  const boundary = slot ?? stage ?? parent;
+  const rect = boundary?.getBoundingClientRect();
+  const boundaryStyle = boundary ? getComputedStyle(boundary) : null;
+  const horizontalPadding = boundaryStyle
+    ? (parseFloat(boundaryStyle.paddingLeft) || 0) + (parseFloat(boundaryStyle.paddingRight) || 0)
+    : 0;
+  const verticalPadding = boundaryStyle
+    ? (parseFloat(boundaryStyle.paddingTop) || 0) + (parseFloat(boundaryStyle.paddingBottom) || 0)
+    : 0;
+  const toolbar = slot?.querySelector<HTMLElement>('[data-device-toolbar]')
+    ?? parent?.querySelector<HTMLElement>('[data-device-toolbar]');
   const toolbarHeight = toolbar?.getBoundingClientRect().height ?? 0;
-  const width = rect?.width || (typeof window !== 'undefined' ? Math.max(280, window.innerWidth - 64) : 375);
-  const measuredHeight = rect?.height ? rect.height - toolbarHeight - 12 : 0;
+  const stack = toolbar?.parentElement;
+  const stackStyle = stack ? getComputedStyle(stack) : null;
+  const measuredGap = stackStyle ? parseFloat(stackStyle.rowGap || stackStyle.gap) : Number.NaN;
+  const stackGap = Number.isFinite(measuredGap) && measuredGap > 0 ? measuredGap : 12;
+  const width = rect?.width
+    ? Math.max(1, rect.width - horizontalPadding)
+    : (typeof window !== 'undefined' ? Math.max(280, window.innerWidth - 64) : 375);
+  const measuredHeight = rect?.height
+    ? rect.height - verticalPadding - toolbarHeight - stackGap
+    : 0;
   const height = measuredHeight > 0
     ? Math.max(240, measuredHeight)
     : (typeof window !== 'undefined' ? Math.max(420, window.innerHeight - 220) : 667);
@@ -34,14 +52,18 @@ export function DeviceCanvas({ children, className = '' }: DeviceCanvasProps) {
       return previous.width === next.width && previous.height === next.height ? previous : next;
     });
     update();
+    const slot = frame?.closest<HTMLElement>('[data-device-preview-slot]');
     const stage = frame?.closest<HTMLElement>('[data-device-preview-stage]');
-    const observed = stage ?? frame?.parentElement;
-    if (typeof ResizeObserver === 'undefined' || !observed) {
+    const observed = slot ?? stage ?? frame?.parentElement;
+    const toolbar = slot?.querySelector<HTMLElement>('[data-device-toolbar]')
+      ?? frame?.parentElement?.querySelector<HTMLElement>('[data-device-toolbar]');
+    const observedElements = [observed, toolbar].filter((target, index, all): target is HTMLElement => Boolean(target) && all.indexOf(target) === index);
+    if (typeof ResizeObserver === 'undefined' || observedElements.length === 0) {
       window.addEventListener('resize', update);
       return () => window.removeEventListener('resize', update);
     }
     const observer = new ResizeObserver(update);
-    observer.observe(observed);
+    observedElements.forEach(target => observer.observe(target));
     return () => observer.disconnect();
   }, []);
 

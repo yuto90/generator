@@ -7,6 +7,7 @@
   --gen-accent: #fd1d1d;
 }
 .app-instagram .device-preview-stack { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
+.app-instagram .device-preview-slot { width: 100%; min-width: 0; min-height: 0; height: calc(100dvh - 32px); align-items: center; }
 .app-instagram .device-canvas { border-radius: 20px; }
 :root[data-theme='light'] .app-instagram {
   --glass-bg: rgba(255, 255, 255, 0.76);

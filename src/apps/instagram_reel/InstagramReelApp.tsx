@@ -96,7 +96,7 @@ function InstagramReelContent() {
       <div className="maker-layout relative flex min-h-screen w-full max-w-[1500px] mx-auto items-center justify-center pr-[340px] max-md:flex-col max-md:px-4 max-md:py-6 max-md:gap-4 max-md:min-h-0 max-md:justify-start" data-device-preview-stage>
 
         {/* ---- Center: Instagram Reel preview ---- */}
-        <div id="capture-area" className="flex w-full justify-center max-md:w-auto">
+        <div id="capture-area" className="device-preview-slot flex w-full justify-center max-md:w-auto" data-device-preview-slot>
           <div className="device-preview-stack">
             <DeviceToolbar />
             <DeviceCanvas>

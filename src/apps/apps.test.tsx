@@ -117,6 +117,19 @@ describe('正方形大型キャンバスのcontainer条件', () => {
     expect(card.style.containerType).toBe('size');
     expect(card.closest('[data-device-canvas]')).toBeInTheDocument();
   });
+
+  test.each([
+    ['AppleMusicPlayerApp', () => <AppleMusicPlayerApp />, 'player-card'],
+    ['YoutubeMusicPlayerApp', () => <YoutubeMusicPlayerApp />, 'player-card'],
+    ['SpotifyPlayerApp', () => <SpotifyPlayerApp />, 'player-card'],
+  ])('%sはpreview slot内でcapture cloneへ論理キャンバスサイズを渡す', (_name, createApp, cardId) => {
+    renderApp(createApp());
+    const card = document.getElementById(cardId) as HTMLElement;
+    const canvas = card.closest('[data-device-canvas]') as HTMLElement;
+    expect(card.closest('[data-device-preview-slot]')).toBeInTheDocument();
+    expect(card.style.getPropertyValue('--device-preview-width')).toBe(`${canvas.dataset.outputWidth}px`);
+    expect(card.style.getPropertyValue('--device-preview-height')).toBe(`${canvas.dataset.outputHeight}px`);
+  });
 });
 
 describe('画像保存ボタン', () => {

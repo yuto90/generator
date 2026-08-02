@@ -74,6 +74,33 @@ describe('useCapture', () => {
     appRoot.remove();
   });
 
+  test('保存用複製はカードの論理サイズ変数とsize container条件を引き継ぐ', async () => {
+    const appRoot = document.createElement('div');
+    appRoot.className = 'app-test';
+    const element = document.createElement('div');
+    element.id = 'player-card';
+    element.style.containerType = 'size';
+    element.style.setProperty('--device-preview-width', '568px');
+    element.style.setProperty('--device-preview-height', '568px');
+    appRoot.append(element);
+    document.body.append(appRoot);
+    captureSnap.mockImplementation(async (captureTarget: Element) => {
+      expect((captureTarget as HTMLElement).style.containerType).toBe('size');
+      expect((captureTarget as HTMLElement).style.getPropertyValue('--device-preview-width')).toBe('568px');
+      expect((captureTarget as HTMLElement).style.getPropertyValue('--device-preview-height')).toBe('568px');
+      return { toCanvas: warmUp, download };
+    });
+    const { result } = renderHook(() => useCapture());
+
+    await act(async () => {
+      await result.current.capture(element, 'player.png', { width: 568, height: 568 });
+    });
+
+    expect(captureSnap).toHaveBeenCalledOnce();
+    expect(appRoot.children).toHaveLength(1);
+    appRoot.remove();
+  });
+
   test('保存処理中はcapturingがtrueになり、完了後に戻る', async () => {
     let resolveDownload!: () => void;
     download.mockReturnValue(new Promise<void>(resolve => { resolveDownload = resolve; }));

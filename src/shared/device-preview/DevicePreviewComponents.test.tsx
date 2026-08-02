@@ -24,6 +24,19 @@ function StableStagePreview() {
   );
 }
 
+function SlotPreview() {
+  return (
+    <DevicePreviewProvider>
+      <div data-device-preview-stage>
+        <div data-device-preview-slot>
+          <DeviceToolbar />
+          <DeviceCanvas><div data-testid="slot-content">プレビュー</div></DeviceCanvas>
+        </div>
+      </div>
+    </DevicePreviewProvider>
+  );
+}
+
 describe('DeviceToolbar / DeviceCanvas', () => {
   beforeEach(() => {
     window.localStorage.clear();
@@ -97,6 +110,26 @@ describe('DeviceToolbar / DeviceCanvas', () => {
         const scale = Number(frame.dataset.displayScale);
         expect(Number.parseFloat(frame.style.height)).toBeLessThanOrEqual(808);
         expect(screen.getByText(`表示倍率 ${Math.round(scale * 100)}%`)).toBeInTheDocument();
+      });
+    } finally {
+      HTMLElement.prototype.getBoundingClientRect = originalRect;
+    }
+  });
+
+  test('専用preview slotのcontent幅を使い、stage全幅へ拡張しない', async () => {
+    const originalRect = HTMLElement.prototype.getBoundingClientRect;
+    HTMLElement.prototype.getBoundingClientRect = function () {
+      if (this.matches('[data-device-preview-stage]')) return { width: 1600, height: 1200, top: 0, left: 0, right: 1600, bottom: 1200, x: 0, y: 0, toJSON: () => ({}) } as DOMRect;
+      if (this.matches('[data-device-preview-slot]')) return { width: 420, height: 900, top: 0, left: 0, right: 420, bottom: 900, x: 0, y: 0, toJSON: () => ({}) } as DOMRect;
+      if (this.matches('[data-device-toolbar]')) return { width: 420, height: 80, top: 0, left: 0, right: 420, bottom: 80, x: 0, y: 0, toJSON: () => ({}) } as DOMRect;
+      return originalRect.call(this);
+    };
+    try {
+      render(<SlotPreview />);
+      const frame = screen.getByTestId('slot-content').closest('.device-canvas-frame') as HTMLElement;
+      await waitFor(() => {
+        expect(Number.parseFloat(frame.style.width)).toBeLessThanOrEqual(420);
+        expect(Number.parseFloat(frame.style.height)).toBeLessThanOrEqual(900);
       });
     } finally {
       HTMLElement.prototype.getBoundingClientRect = originalRect;

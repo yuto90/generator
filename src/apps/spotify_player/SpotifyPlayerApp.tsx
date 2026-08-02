@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type CSSProperties, type FormEvent } from 'react';
 import { useCapture } from '../../shared/capture/useCapture';
 import { DeviceCanvas, DevicePreviewProvider, DeviceToolbar, useDevicePreview } from '../../shared/device-preview';
 import ImageCropField from '../../shared/image-crop/ImageCropField';
@@ -257,10 +257,20 @@ function SpotifyPlayerContent() {
     <div className="app-spotify">
       <div className="app-shell">
         <section className="preview-stage" aria-label="プレーヤープレビュー" data-device-preview-stage>
+          <div className="device-preview-slot" data-device-preview-slot>
           <div className="device-preview-stack">
             <DeviceToolbar />
             <DeviceCanvas>
-              <article className="spotify-card" id="player-card" ref={cardRef} style={{ containerType: 'size' }}>
+              <article
+                className="spotify-card"
+                id="player-card"
+                ref={cardRef}
+                style={{
+                  containerType: 'size',
+                  '--device-preview-width': `${outputSize.width}px`,
+                  '--device-preview-height': `${outputSize.height}px`,
+                } as CSSProperties}
+              >
             <div className="card-topbar">
               <button className="icon-button" type="button" aria-label="閉じる">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.3 8.7a1 1 0 0 1 1.4 0l5.3 5.3 5.3-5.3a1 1 0 1 1 1.4 1.4l-6 6a1 1 0 0 1-1.4 0l-6-6a1 1 0 0 1 0-1.4z" /></svg>
@@ -363,6 +373,7 @@ function SpotifyPlayerContent() {
             </div>
               </article>
             </DeviceCanvas>
+          </div>
           </div>
         </section>
 
