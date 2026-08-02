@@ -22,7 +22,6 @@ npm run dev
 
 各アプリにはハッシュルートで直接アクセスすることもできます。
 
-- music_player: http://localhost:5173/#/music_player
 - apple_music_player: http://localhost:5173/#/apple_music_player
 - youtube_music_player: http://localhost:5173/#/youtube_music_player
 - spotify_player: http://localhost:5173/#/spotify_player

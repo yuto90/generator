@@ -21,7 +21,7 @@ npm install
 npm run dev
 ```
 
-`http://localhost:5173/` でポータルを確認します。各アプリは `#/music_player` のようなハッシュルートで開きます。
+`http://localhost:5173/` でポータルを確認します。各アプリは `#/apple_music_player` のようなハッシュルートで開きます。
 
 本番ビルドの確認は次を実行します。
 

@@ -3,8 +3,8 @@ import { GENERATORS } from './generators';
 import { PortalLayout } from './portal/PortalLayout';
 import { ThemeProvider } from './shared/theme/ThemeContext';
 
-// 旧ポータルの URL は `/#music_player` 形式だったため、
-// ハッシュルーターの `#/music_player` 形式へ正規化してブックマークを生かす
+// 旧ポータルの URL は `/#apple_music_player` のような形式だったため、
+// ハッシュルーターの `#/apple_music_player` 形式へ正規化してブックマークを生かす
 const legacyHash = window.location.hash.match(/^#([a-z_]+)$/);
 if (legacyHash && GENERATORS.some(gen => gen.id === legacyHash[1])) {
   window.history.replaceState(null, '', `#/${legacyHash[1]}`);

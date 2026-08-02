@@ -4,7 +4,6 @@ import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { ThemeProvider } from '../shared/theme/ThemeContext';
 import SpotifyPlayerApp from './spotify_player/SpotifyPlayerApp';
-import MusicPlayerApp from './music_player/MusicPlayerApp';
 import AppleMusicPlayerApp from './apple_music_player/AppleMusicPlayerApp';
 import YoutubeMusicPlayerApp from './youtube_music_player/YoutubeMusicPlayerApp';
 import InstagramReelApp from './instagram_reel/InstagramReelApp';
@@ -66,35 +65,6 @@ describe('SpotifyPlayerApp', () => {
   });
 });
 
-describe('MusicPlayerApp', () => {
-  test('フォームとカードを描画し、適用でタイトルが反映される', async () => {
-    const user = userEvent.setup();
-    renderApp(<MusicPlayerApp />);
-
-    await user.type(screen.getByLabelText('Title'), 'グラスの曲');
-    await user.click(screen.getByRole('button', { name: '適用してプレビュー' }));
-
-    expect(document.getElementById('song-title')).toHaveTextContent('グラスの曲');
-    expect(document.getElementById('player-card')).not.toBeNull();
-    expect(screen.getByRole('button', { name: '再生と一時停止' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'トリミングを調整' })).toBeDisabled();
-  });
-
-  test('画像をアップロードして適用しても未調整なら中央coverを維持する', async () => {
-    const user = userEvent.setup();
-    renderApp(<MusicPlayerApp />);
-
-    await user.upload(
-      screen.getByLabelText('Cover Image'),
-      new File(['image'], 'cover.png', { type: 'image/png' }),
-    );
-    await waitFor(() => expect(screen.getByRole('button', { name: 'トリミングを調整' })).toBeEnabled());
-    await user.click(screen.getByRole('button', { name: '適用してプレビュー' }));
-
-    expect(document.getElementById('cover-img')).toHaveStyle({ backgroundSize: 'cover' });
-  });
-});
-
 describe('AppleMusicPlayerApp', () => {
   test('テーマ既定色でカードを初期化する', () => {
     renderApp(<AppleMusicPlayerApp />);
@@ -137,7 +107,6 @@ describe('InstagramReelApp', () => {
 
 describe('画像保存ボタン', () => {
   test.each([
-    ['MusicPlayerApp', () => <MusicPlayerApp />],
     ['AppleMusicPlayerApp', () => <AppleMusicPlayerApp />],
     ['YoutubeMusicPlayerApp', () => <YoutubeMusicPlayerApp />],
     ['InstagramReelApp', () => <InstagramReelApp />],

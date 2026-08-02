@@ -24,15 +24,6 @@ const musicIcon = (
 
 export const GENERATORS: GeneratorDef[] = [
   {
-    id: 'music_player',
-    name: 'Music Player',
-    desc: '汎用グラスデザイン',
-    title: 'music player generator',
-    color: 'linear-gradient(135deg, #7c6af0, #5b4fe0)',
-    icon: musicIcon,
-    Component: lazy(() => import('./apps/music_player/MusicPlayerApp')),
-  },
-  {
     id: 'apple_music_player',
     name: 'Apple Music',
     desc: 'Now Playing 風カード',
