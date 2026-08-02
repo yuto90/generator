@@ -85,6 +85,29 @@ describe('LineTalkApp', () => {
     expect(preview).not.toHaveTextContent('21:05');
   });
 
+  test('本文と時刻のエラーは一方の修正や送受信変更で互いに消えない', async () => {
+    const user = userEvent.setup();
+    renderApp();
+    const text = screen.getByLabelText('メッセージ 1 の本文');
+    const time = screen.getByLabelText('メッセージ 1 の時刻');
+    const direction = screen.getByLabelText('メッセージ 1 の送受信');
+
+    await user.clear(text);
+    await user.clear(time);
+    await user.click(screen.getByRole('button', { name: '適用してプレビュー' }));
+    expect(text).toHaveAttribute('aria-invalid', 'true');
+    expect(time).toHaveAttribute('aria-invalid', 'true');
+
+    await user.selectOptions(direction, 'sent');
+    expect(text).toHaveAttribute('aria-invalid', 'true');
+    expect(time).toHaveAttribute('aria-invalid', 'true');
+
+    await user.type(text, '本文');
+    expect(text).toHaveAttribute('aria-invalid', 'false');
+    expect(time).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText('時刻を入力してください')).toBeInTheDocument();
+  });
+
   test('相手名が空なら適用時に「相手」を表示し、空白だけの本文を拒否する', async () => {
     const user = userEvent.setup();
     renderApp();

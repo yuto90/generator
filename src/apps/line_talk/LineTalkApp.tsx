@@ -147,8 +147,18 @@ export default function LineTalkApp() {
       ),
     }));
     setErrors(current => {
+      const messageErrors = current.messages[messageId];
+      if (!messageErrors || (!('text' in changes) && !('time' in changes))) return current;
+
       const next = { ...current, messages: { ...current.messages } };
-      delete next.messages[messageId];
+      const nextMessageErrors = { ...messageErrors };
+      if ('text' in changes) delete nextMessageErrors.text;
+      if ('time' in changes) delete nextMessageErrors.time;
+      if (nextMessageErrors.text || nextMessageErrors.time) {
+        next.messages[messageId] = nextMessageErrors;
+      } else {
+        delete next.messages[messageId];
+      }
       return next;
     });
   }
