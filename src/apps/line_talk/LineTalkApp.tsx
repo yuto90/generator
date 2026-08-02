@@ -57,9 +57,16 @@ const INITIAL_CONTENT: TalkContent = {
 };
 
 const MAX_MESSAGES = 20;
+const MAX_MESSAGE_TEXT_LENGTH = 200;
+const MAX_MESSAGE_INPUT_LENGTH = MAX_MESSAGE_TEXT_LENGTH * 2;
+const MAX_MESSAGE_NEWLINES = 10;
 
 function countMessageText(text: string) {
   return text.replace(/\s/g, '').length;
+}
+
+function countMessageNewlines(text: string) {
+  return text.match(/\r\n|\r|\n/g)?.length ?? 0;
 }
 
 function cloneContent(content: TalkContent): TalkContent {
@@ -79,8 +86,12 @@ export function validateTalkContent(content: TalkContent): TalkValidationErrors 
   content.messages.forEach(message => {
     const messageErrors: TalkFieldError = {};
     const textLength = countMessageText(message.text);
-    if (textLength < 1 || textLength > 200) {
+    if (textLength < 1 || textLength > MAX_MESSAGE_TEXT_LENGTH) {
       messageErrors.text = '本文は空白を除いて1〜200文字で入力してください';
+    } else if (message.text.length > MAX_MESSAGE_INPUT_LENGTH) {
+      messageErrors.text = `本文は全体で${MAX_MESSAGE_INPUT_LENGTH}文字以内で入力してください`;
+    } else if (countMessageNewlines(message.text) > MAX_MESSAGE_NEWLINES) {
+      messageErrors.text = `本文の改行は${MAX_MESSAGE_NEWLINES}回以内で入力してください`;
     }
     if (!message.time.trim()) {
       messageErrors.time = '時刻を入力してください';
@@ -205,7 +216,7 @@ export default function LineTalkApp() {
   return (
     <div className="app-line-talk">
       <div className="line-talk-layout">
-        <main className="line-talk-preview-column">
+        <section className="line-talk-preview-column" aria-label="トーク画面プレビュー">
           <div
             className="line-talk-preview"
             data-testid="line-talk-preview"
@@ -257,7 +268,7 @@ export default function LineTalkApp() {
               <span className="line-talk-input-send">➤</span>
             </div>
           </div>
-        </main>
+        </section>
 
         <aside className="line-talk-editor" aria-label="LINEトーク編集パネル">
           <div className="line-talk-editor-heading">
@@ -348,7 +359,7 @@ export default function LineTalkApp() {
                       placeholder="本文を入力"
                     />
                     <div className="line-talk-input-footer">
-                      <span className="line-talk-help">空白を除いて1〜200文字</span>
+                      <span className="line-talk-help">空白を除いて1〜200文字、全体で400文字以内・改行10回以内</span>
                       <span className="line-talk-counter">{countMessageText(message.text)} / 200</span>
                     </div>
                     {messageErrors.text && <p className="line-talk-error" id={textErrorId}>{messageErrors.text}</p>}

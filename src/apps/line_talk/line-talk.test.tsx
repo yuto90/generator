@@ -129,6 +129,39 @@ describe('LineTalkApp', () => {
     expect(screen.getAllByTestId('line-talk-preview-message')[0].querySelector('.line-talk-bubble')).toHaveTextContent('あ'.repeat(200));
   });
 
+  test('本文の全体入力長が上限を超える場合は空白を除く文字数が範囲内でも拒否する', async () => {
+    const user = userEvent.setup();
+    renderApp();
+    const text = screen.getByLabelText('メッセージ 1 の本文');
+    await user.clear(text);
+    await user.type(text, `${'あ'.repeat(200)}${' '.repeat(201)}`);
+    await user.click(screen.getByRole('button', { name: '適用してプレビュー' }));
+
+    expect(screen.getByText('本文は全体で400文字以内で入力してください')).toBeInTheDocument();
+    expect(text).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getAllByTestId('line-talk-preview-message')[0]).toHaveTextContent('今日はどうだった？');
+  });
+
+  test('本文の改行数が上限を超える場合は空白を除く文字数が範囲内でも拒否する', async () => {
+    const user = userEvent.setup();
+    renderApp();
+    const text = screen.getByLabelText('メッセージ 1 の本文');
+    await user.clear(text);
+    await user.type(text, `あ${'\n'.repeat(11)}`);
+    await user.click(screen.getByRole('button', { name: '適用してプレビュー' }));
+
+    expect(screen.getByText('本文の改行は10回以内で入力してください')).toBeInTheDocument();
+    expect(text).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  test('プレビュー列はmainではないランドマークで構成する', () => {
+    renderApp();
+
+    const previewColumn = screen.getByTestId('line-talk-preview').parentElement;
+    expect(previewColumn?.tagName).toBe('SECTION');
+    expect(previewColumn).toHaveAttribute('aria-label', 'トーク画面プレビュー');
+  });
+
   test('追加は20件で上限になり、削除と上下移動を編集へ反映する', async () => {
     const user = userEvent.setup();
     renderApp();
