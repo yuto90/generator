@@ -217,6 +217,102 @@ describe('LineTalkApp', () => {
     expect(screen.getAllByTestId('line-talk-preview-message')).toHaveLength(3);
   });
 
+  test('会話全体の本文が2000文字なら適用できる', async () => {
+    const user = userEvent.setup();
+    renderApp();
+    const add = screen.getByRole('button', { name: 'メッセージを追加' });
+    for (let index = 0; index < 7; index += 1) {
+      await user.click(add);
+    }
+    const messageText = 'あ'.repeat(200);
+    for (const field of screen.getAllByLabelText(/の本文$/)) {
+      fireEvent.change(field, { target: { value: messageText } });
+    }
+
+    await user.click(screen.getByRole('button', { name: '適用してプレビュー' }));
+
+    expect(screen.queryByText('メッセージ全体の本文は2000文字以内で入力してください')).not.toBeInTheDocument();
+    expect(screen.getAllByTestId('line-talk-preview-message')).toHaveLength(10);
+  });
+
+  test('会話全体の本文が2000文字を超えると適用済みプレビューを維持し、一覧を無効状態にする', async () => {
+    const user = userEvent.setup();
+    renderApp();
+    const add = screen.getByRole('button', { name: 'メッセージを追加' });
+    for (let index = 0; index < 17; index += 1) {
+      await user.click(add);
+    }
+    const messageText = 'あ'.repeat(200);
+    for (const field of screen.getAllByLabelText(/の本文$/)) {
+      fireEvent.change(field, { target: { value: messageText } });
+    }
+    const preview = screen.getByTestId('line-talk-preview');
+    const originalPreviewText = screen.getAllByTestId('line-talk-preview-message')[0].textContent;
+
+    await user.click(screen.getByRole('button', { name: '適用してプレビュー' }));
+
+    expect(screen.getByText('メッセージ全体の本文は2000文字以内で入力してください')).toBeInTheDocument();
+    const messageList = document.querySelector('.line-talk-editor-messages');
+    expect(messageList).toHaveAttribute('aria-invalid', 'true');
+    expect(messageList).toHaveAttribute('aria-describedby', 'line-talk-message-length-error');
+    expect(preview).toHaveTextContent(originalPreviewText ?? '');
+    expect(screen.getAllByTestId('line-talk-preview-message')).toHaveLength(3);
+  });
+
+  test('本文を修正して会話全体の本文を上限まで減らすと長さエラーとARIAを解除する', async () => {
+    const user = userEvent.setup();
+    renderApp();
+    const add = screen.getByRole('button', { name: 'メッセージを追加' });
+    for (let index = 0; index < 17; index += 1) {
+      await user.click(add);
+    }
+    const messageText = 'あ'.repeat(200);
+    const fields = screen.getAllByLabelText(/の本文$/);
+    for (const field of fields) {
+      fireEvent.change(field, { target: { value: messageText } });
+    }
+    await user.click(screen.getByRole('button', { name: '適用してプレビュー' }));
+    expect(screen.getByText('メッセージ全体の本文は2000文字以内で入力してください')).toBeInTheDocument();
+
+    for (const field of fields.slice(0, 10)) {
+      fireEvent.change(field, { target: { value: 'あ' } });
+    }
+    expect(screen.getByText('メッセージ全体の本文は2000文字以内で入力してください')).toBeInTheDocument();
+    fireEvent.change(fields[10], { target: { value: 'あ' } });
+
+    expect(screen.queryByText('メッセージ全体の本文は2000文字以内で入力してください')).not.toBeInTheDocument();
+    const messageList = document.querySelector('.line-talk-editor-messages');
+    expect(messageList).toHaveAttribute('aria-invalid', 'false');
+    expect(messageList).not.toHaveAttribute('aria-describedby');
+  });
+
+  test('メッセージを削除して会話全体の本文を上限まで減らすと長さエラーとARIAを解除する', async () => {
+    const user = userEvent.setup();
+    renderApp();
+    const add = screen.getByRole('button', { name: 'メッセージを追加' });
+    for (let index = 0; index < 17; index += 1) {
+      await user.click(add);
+    }
+    const messageText = 'あ'.repeat(200);
+    for (const field of screen.getAllByLabelText(/の本文$/)) {
+      fireEvent.change(field, { target: { value: messageText } });
+    }
+    await user.click(screen.getByRole('button', { name: '適用してプレビュー' }));
+    expect(screen.getByText('メッセージ全体の本文は2000文字以内で入力してください')).toBeInTheDocument();
+
+    for (let index = 0; index < 9; index += 1) {
+      await user.click(screen.getAllByRole('button', { name: /を削除$/ })[0]);
+    }
+    expect(screen.getByText('メッセージ全体の本文は2000文字以内で入力してください')).toBeInTheDocument();
+    await user.click(screen.getAllByRole('button', { name: /を削除$/ })[0]);
+
+    expect(screen.queryByText('メッセージ全体の本文は2000文字以内で入力してください')).not.toBeInTheDocument();
+    const messageList = document.querySelector('.line-talk-editor-messages');
+    expect(messageList).toHaveAttribute('aria-invalid', 'false');
+    expect(messageList).not.toHaveAttribute('aria-describedby');
+    expect(screen.getAllByTestId('line-talk-editor-message')).toHaveLength(10);
+  });
+
   test('本文を修正して会話全体の改行を上限まで減らすと集約エラーとARIAを解除する', async () => {
     const user = userEvent.setup();
     renderApp();

@@ -27,6 +27,7 @@ export interface TalkValidationErrors {
   partnerName?: string;
   messageCount?: string;
   totalNewlines?: string;
+  totalTextLength?: string;
   messages: Record<string, TalkFieldError>;
 }
 
@@ -62,6 +63,7 @@ const MAX_MESSAGE_TEXT_LENGTH = 200;
 const MAX_MESSAGE_INPUT_LENGTH = MAX_MESSAGE_TEXT_LENGTH * 2;
 const MAX_MESSAGE_NEWLINES = 10;
 const MAX_TOTAL_MESSAGE_NEWLINES = 40;
+const MAX_TOTAL_MESSAGE_INPUT_LENGTH = 2000;
 
 function countMessageText(text: string) {
   return text.replace(/\s/g, '').length;
@@ -81,12 +83,25 @@ function getTotalNewlineError(content: TalkContent) {
     : undefined;
 }
 
-function syncTotalNewlineError(errors: TalkValidationErrors, content: TalkContent) {
+function getTotalTextLengthError(content: TalkContent) {
+  const totalTextLength = content.messages.reduce((total, message) => total + message.text.length, 0);
+  return totalTextLength > MAX_TOTAL_MESSAGE_INPUT_LENGTH
+    ? `メッセージ全体の本文は${MAX_TOTAL_MESSAGE_INPUT_LENGTH}文字以内で入力してください`
+    : undefined;
+}
+
+function syncAggregateErrors(errors: TalkValidationErrors, content: TalkContent) {
   const totalNewlineError = getTotalNewlineError(content);
   if (totalNewlineError) {
     errors.totalNewlines = totalNewlineError;
   } else {
     delete errors.totalNewlines;
+  }
+  const totalTextLengthError = getTotalTextLengthError(content);
+  if (totalTextLengthError) {
+    errors.totalTextLength = totalTextLengthError;
+  } else {
+    delete errors.totalTextLength;
   }
 }
 
@@ -104,8 +119,7 @@ export function validateTalkContent(content: TalkContent): TalkValidationErrors 
     errors.messageCount = 'メッセージは1〜20件で入力してください';
   }
 
-  const totalNewlineError = getTotalNewlineError(content);
-  if (totalNewlineError) errors.totalNewlines = totalNewlineError;
+  syncAggregateErrors(errors, content);
 
   content.messages.forEach(message => {
     const messageErrors: TalkFieldError = {};
@@ -133,6 +147,7 @@ function hasValidationErrors(errors: TalkValidationErrors) {
     errors.partnerName ||
       errors.messageCount ||
       errors.totalNewlines ||
+      errors.totalTextLength ||
       Object.values(errors.messages).some(messageErrors => messageErrors.text || messageErrors.time),
   );
 }
@@ -176,7 +191,7 @@ export default function LineTalkApp() {
 
     setErrors(current => {
       const next = { ...current, messages: { ...current.messages } };
-      syncTotalNewlineError(next, nextDraft);
+      syncAggregateErrors(next, nextDraft);
 
       const messageErrors = current.messages[messageId];
       if (!messageErrors) return next;
@@ -213,7 +228,7 @@ export default function LineTalkApp() {
     updateDraft(() => nextDraft);
     setErrors(current => {
       const next = { ...current, messages: { ...current.messages } };
-      syncTotalNewlineError(next, nextDraft);
+      syncAggregateErrors(next, nextDraft);
       delete next.messages[messageId];
       return next;
     });
@@ -351,13 +366,17 @@ export default function LineTalkApp() {
           {errors.totalNewlines && (
             <p className="line-talk-error" id="line-talk-message-newline-error" role="alert">{errors.totalNewlines}</p>
           )}
+          {errors.totalTextLength && (
+            <p className="line-talk-error" id="line-talk-message-length-error" role="alert">{errors.totalTextLength}</p>
+          )}
 
           <div
             className="line-talk-editor-messages"
-            aria-invalid={Boolean(errors.messageCount || errors.totalNewlines)}
+            aria-invalid={Boolean(errors.messageCount || errors.totalNewlines || errors.totalTextLength)}
             aria-describedby={[
               errors.messageCount && 'line-talk-message-count-error',
               errors.totalNewlines && 'line-talk-message-newline-error',
+              errors.totalTextLength && 'line-talk-message-length-error',
             ].filter(Boolean).join(' ') || undefined}
           >
             {draft.messages.map((message, index) => {
