@@ -71,6 +71,25 @@ function countMessageNewlines(text: string) {
   return text.match(/\r\n|\r|\n/g)?.length ?? 0;
 }
 
+function getTotalNewlineError(content: TalkContent) {
+  const totalNewlines = content.messages.reduce(
+    (total, message) => total + countMessageNewlines(message.text),
+    0,
+  );
+  return totalNewlines > MAX_TOTAL_MESSAGE_NEWLINES
+    ? `メッセージ全体の改行は${MAX_TOTAL_MESSAGE_NEWLINES}回以内で入力してください`
+    : undefined;
+}
+
+function syncTotalNewlineError(errors: TalkValidationErrors, content: TalkContent) {
+  const totalNewlineError = getTotalNewlineError(content);
+  if (totalNewlineError) {
+    errors.totalNewlines = totalNewlineError;
+  } else {
+    delete errors.totalNewlines;
+  }
+}
+
 function cloneContent(content: TalkContent): TalkContent {
   return {
     partnerName: content.partnerName,
@@ -85,13 +104,8 @@ export function validateTalkContent(content: TalkContent): TalkValidationErrors 
     errors.messageCount = 'メッセージは1〜20件で入力してください';
   }
 
-  const totalNewlines = content.messages.reduce(
-    (total, message) => total + countMessageNewlines(message.text),
-    0,
-  );
-  if (totalNewlines > MAX_TOTAL_MESSAGE_NEWLINES) {
-    errors.totalNewlines = `メッセージ全体の改行は${MAX_TOTAL_MESSAGE_NEWLINES}回以内で入力してください`;
-  }
+  const totalNewlineError = getTotalNewlineError(content);
+  if (totalNewlineError) errors.totalNewlines = totalNewlineError;
 
   content.messages.forEach(message => {
     const messageErrors: TalkFieldError = {};
@@ -151,17 +165,22 @@ export default function LineTalkApp() {
   }
 
   function updateMessage(messageId: string, changes: Partial<TalkMessage>) {
-    updateDraft(current => ({
-      ...current,
-      messages: current.messages.map(message =>
+    const nextDraft: TalkContent = {
+      ...draft,
+      messages: draft.messages.map(message =>
         message.id === messageId ? { ...message, ...changes } : message,
       ),
-    }));
-    setErrors(current => {
-      const messageErrors = current.messages[messageId];
-      if (!messageErrors || (!('text' in changes) && !('time' in changes))) return current;
+    };
+    updateDraft(() => nextDraft);
+    if (!('text' in changes) && !('time' in changes)) return;
 
+    setErrors(current => {
       const next = { ...current, messages: { ...current.messages } };
+      syncTotalNewlineError(next, nextDraft);
+
+      const messageErrors = current.messages[messageId];
+      if (!messageErrors) return next;
+
       const nextMessageErrors = { ...messageErrors };
       if ('text' in changes) delete nextMessageErrors.text;
       if ('time' in changes) delete nextMessageErrors.time;
@@ -187,12 +206,14 @@ export default function LineTalkApp() {
   }
 
   function removeMessage(messageId: string) {
-    updateDraft(current => ({
-      ...current,
-      messages: current.messages.filter(message => message.id !== messageId),
-    }));
+    const nextDraft: TalkContent = {
+      ...draft,
+      messages: draft.messages.filter(message => message.id !== messageId),
+    };
+    updateDraft(() => nextDraft);
     setErrors(current => {
       const next = { ...current, messages: { ...current.messages } };
+      syncTotalNewlineError(next, nextDraft);
       delete next.messages[messageId];
       return next;
     });

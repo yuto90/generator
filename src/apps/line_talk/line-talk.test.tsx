@@ -217,6 +217,61 @@ describe('LineTalkApp', () => {
     expect(screen.getAllByTestId('line-talk-preview-message')).toHaveLength(3);
   });
 
+  test('本文を修正して会話全体の改行を上限まで減らすと集約エラーとARIAを解除する', async () => {
+    const user = userEvent.setup();
+    renderApp();
+    const add = screen.getByRole('button', { name: 'メッセージを追加' });
+    for (let index = 0; index < 17; index += 1) {
+      await user.click(add);
+    }
+    const messageText = `あ${'\n'.repeat(10)}`;
+    const fields = screen.getAllByLabelText(/の本文$/);
+    for (const field of fields) {
+      fireEvent.change(field, { target: { value: messageText } });
+    }
+    await user.click(screen.getByRole('button', { name: '適用してプレビュー' }));
+    expect(screen.getByText('メッセージ全体の改行は40回以内で入力してください')).toBeInTheDocument();
+
+    fireEvent.change(fields[0], { target: { value: `あ${'\n'.repeat(9)}` } });
+    expect(screen.getByText('メッセージ全体の改行は40回以内で入力してください')).toBeInTheDocument();
+
+    for (const field of fields.slice(0, 16)) {
+      fireEvent.change(field, { target: { value: 'あ' } });
+    }
+
+    expect(screen.queryByText('メッセージ全体の改行は40回以内で入力してください')).not.toBeInTheDocument();
+    const messageList = document.querySelector('.line-talk-editor-messages');
+    expect(messageList).toHaveAttribute('aria-invalid', 'false');
+    expect(messageList).not.toHaveAttribute('aria-describedby');
+  });
+
+  test('メッセージを削除して会話全体の改行を上限まで減らすと集約エラーとARIAを解除する', async () => {
+    const user = userEvent.setup();
+    renderApp();
+    const add = screen.getByRole('button', { name: 'メッセージを追加' });
+    for (let index = 0; index < 17; index += 1) {
+      await user.click(add);
+    }
+    const messageText = `あ${'\n'.repeat(10)}`;
+    for (const field of screen.getAllByLabelText(/の本文$/)) {
+      fireEvent.change(field, { target: { value: messageText } });
+    }
+    await user.click(screen.getByRole('button', { name: '適用してプレビュー' }));
+    expect(screen.getByText('メッセージ全体の改行は40回以内で入力してください')).toBeInTheDocument();
+
+    await user.click(screen.getAllByRole('button', { name: /を削除$/ })[0]);
+    expect(screen.getByText('メッセージ全体の改行は40回以内で入力してください')).toBeInTheDocument();
+    for (let index = 1; index < 16; index += 1) {
+      await user.click(screen.getAllByRole('button', { name: /を削除$/ })[0]);
+    }
+
+    expect(screen.queryByText('メッセージ全体の改行は40回以内で入力してください')).not.toBeInTheDocument();
+    const messageList = document.querySelector('.line-talk-editor-messages');
+    expect(messageList).toHaveAttribute('aria-invalid', 'false');
+    expect(messageList).not.toHaveAttribute('aria-describedby');
+    expect(screen.getAllByTestId('line-talk-editor-message')).toHaveLength(4);
+  });
+
   test('プレビュー列はmainではないランドマークで構成する', () => {
     renderApp();
 
