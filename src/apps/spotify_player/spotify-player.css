@@ -66,6 +66,8 @@
   place-items: center;
   padding: 40px;
 }
+.app-spotify .device-preview-stack { display: flex; flex-direction: column; align-items: center; gap: 12px; width: min(100%, 760px); }
+.app-spotify .device-canvas { border-radius: 28px; }
 
 .app-spotify .spotify-card {
   width: 340px;
@@ -78,6 +80,7 @@
   box-shadow: 0 30px 75px var(--card-shadow);
   overflow: hidden;
 }
+.app-spotify .device-canvas__content > .spotify-card { width: 100%; height: 100%; max-width: none; border-radius: 28px; }
 
 :root[data-theme='light'] .app-spotify .spotify-card {
   border-color: rgba(25, 20, 20, 0.08);

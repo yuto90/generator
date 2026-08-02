@@ -1,10 +1,10 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { snapdom } from '@zumer/snapdom';
+import type { DeviceSize } from '../device-preview/device-preview';
 
 const TARGET_ERROR = '保存対象が見つかりませんでした。ページを再読み込みして、もう一度お試しください。';
 const IMAGE_ERROR = '画像を読み込めませんでした。画像を選び直して、もう一度お試しください。';
 const GENERIC_ERROR = '画像を生成できませんでした。ページを再読み込みして、もう一度お試しください。';
-const CAPTURE_SCALE = 4;
 
 export class CaptureError extends Error {
   constructor(message: string, cause?: unknown) {
@@ -27,7 +27,14 @@ function isSafari() {
   return /safari/i.test(navigator.userAgent) && !/(?:chrome|chromium|android)/i.test(navigator.userAgent);
 }
 
-function createCaptureTarget(element: HTMLElement) {
+function readElementSize(element: HTMLElement): DeviceSize {
+  const rect = element.getBoundingClientRect();
+  const width = Math.round(rect.width || element.offsetWidth || parseFloat(getComputedStyle(element).width) || 1);
+  const height = Math.round(rect.height || element.offsetHeight || parseFloat(getComputedStyle(element).height) || 1);
+  return { width: Math.max(1, width), height: Math.max(1, height) };
+}
+
+function createCaptureTarget(element: HTMLElement, size: DeviceSize) {
   const appRoot = element.closest<HTMLElement>('[class^="app-"], [class*=" app-"]') ?? document.body;
   const captureTarget = element.cloneNode(true) as HTMLElement;
 
@@ -37,7 +44,14 @@ function createCaptureTarget(element: HTMLElement) {
     left: '-100000px',
     margin: '0',
     pointerEvents: 'none',
-    transform: `scale(${CAPTURE_SCALE})`,
+    width: `${size.width}px`,
+    height: `${size.height}px`,
+    minWidth: `${size.width}px`,
+    minHeight: `${size.height}px`,
+    maxWidth: `${size.width}px`,
+    maxHeight: `${size.height}px`,
+    boxSizing: 'border-box',
+    transform: 'none',
     transformOrigin: 'top left',
   });
   captureTarget.setAttribute('aria-hidden', 'true');
@@ -64,19 +78,24 @@ function createCaptureTarget(element: HTMLElement) {
  */
 export function useCapture() {
   const [capturing, setCapturing] = useState(false);
+  const captureLock = useRef(false);
 
-  const capture = useCallback(async (element: HTMLElement | null, fileName: string) => {
+  const capture = useCallback(async (element: HTMLElement | null, fileName: string, outputSize?: DeviceSize) => {
+    if (captureLock.current) return;
+    captureLock.current = true;
     let captureTarget: HTMLElement | null = null;
     setCapturing(true);
     try {
       if (!element) throw new CaptureError(TARGET_ERROR);
+      const size = outputSize ?? readElementSize(element);
       if (document.fonts?.ready) await document.fonts.ready;
-      captureTarget = createCaptureTarget(element);
+      captureTarget = createCaptureTarget(element, size);
       const captureResult = await snapdom(captureTarget, {
         format: 'png',
         filename: fileName,
         scale: 1,
         dpr: 1,
+        ...(outputSize ? { width: size.width, height: size.height } : {}),
       });
       if (isSafari()) {
         // WebKitはforeignObject内のフォント・画像を最初のdrawImageで
@@ -92,6 +111,7 @@ export function useCapture() {
     } finally {
       captureTarget?.remove();
       setCapturing(false);
+      captureLock.current = false;
     }
   }, []);
 

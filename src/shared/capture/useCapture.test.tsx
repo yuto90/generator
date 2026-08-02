@@ -28,7 +28,7 @@ describe('useCapture', () => {
     });
   });
 
-  test('Safariでも等倍ラスタライズされない4倍サイズの複製をPNGで保存する', async () => {
+  test('Safariでも指定実寸の非表示複製をscale:1/dpr:1でPNG保存する', async () => {
     const appRoot = document.createElement('div');
     appRoot.className = 'app-test';
     const element = document.createElement('div');
@@ -41,8 +41,10 @@ describe('useCapture', () => {
     captureSnap.mockImplementation(async (captureTarget: Element, options: Record<string, unknown>) => {
       expect(captureTarget).not.toBe(element);
       expect(captureTarget.parentElement).toBe(appRoot);
-      expect((captureTarget as HTMLElement).style.transform).toBe('scale(4)');
+      expect((captureTarget as HTMLElement).style.transform).toBe('none');
       expect((captureTarget as HTMLElement).style.transformOrigin).toBe('top left');
+      expect((captureTarget as HTMLElement).style.width).toBe('375px');
+      expect((captureTarget as HTMLElement).style.height).toBe('667px');
       const captureArtwork = captureTarget.firstElementChild as HTMLElement;
       expect(captureArtwork.style.backgroundRepeat).toBe('no-repeat');
       expect(options).toEqual({
@@ -50,13 +52,15 @@ describe('useCapture', () => {
         filename: 'player.png',
         scale: 1,
         dpr: 1,
+        width: 375,
+        height: 667,
       });
       return { toCanvas: warmUp, download };
     });
     const { result } = renderHook(() => useCapture());
 
     await act(async () => {
-      await result.current.capture(element, 'player.png');
+      await result.current.capture(element, 'player.png', { width: 375, height: 667 });
     });
 
     expect(captureSnap).toHaveBeenCalledOnce();
@@ -100,6 +104,23 @@ describe('useCapture', () => {
     expect(download).toHaveBeenCalledOnce();
   });
 
+  test('保存中の二重実行は1回のSnapDOMとダウンロードに抑える', async () => {
+    let resolveDownload!: () => void;
+    download.mockReturnValue(new Promise<void>(resolve => { resolveDownload = resolve; }));
+    const { result } = renderHook(() => useCapture());
+    let first!: Promise<void | undefined>;
+    let second!: Promise<void | undefined>;
+    act(() => {
+      first = result.current.capture(document.createElement('div'), 'first.png', { width: 375, height: 667 });
+      second = result.current.capture(document.createElement('div'), 'second.png', { width: 375, height: 667 });
+    });
+    await waitFor(() => expect(result.current.capturing).toBe(true));
+    resolveDownload();
+    await act(async () => { await Promise.all([first, second]); });
+    expect(captureSnap).toHaveBeenCalledOnce();
+    expect(download).toHaveBeenCalledOnce();
+  });
+
   test('保存対象がない場合は利用者向けエラーに変換する', async () => {
     const { result } = renderHook(() => useCapture());
 
@@ -138,5 +159,23 @@ describe('useCapture', () => {
       });
     });
     expect(result.current.capturing).toBe(false);
+  });
+
+  test('SnapDOM失敗時も保存用複製を後始末する', async () => {
+    const appRoot = document.createElement('div');
+    appRoot.className = 'app-test';
+    const element = document.createElement('div');
+    appRoot.append(element);
+    document.body.append(appRoot);
+    const originalError = new Error('renderer failed');
+    captureSnap.mockRejectedValueOnce(originalError);
+    const { result } = renderHook(() => useCapture());
+
+    await act(async () => {
+      await expect(result.current.capture(element, 'player.png', { width: 375, height: 667 })).rejects.toMatchObject({ cause: originalError });
+    });
+    expect(appRoot.children).toHaveLength(1);
+    expect(result.current.capturing).toBe(false);
+    appRoot.remove();
   });
 });

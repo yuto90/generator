@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ChangeEvent, type CSSProperties } from 'react';
 import { useCapture } from '../../shared/capture/useCapture';
+import { DeviceCanvas, DevicePreviewProvider, DeviceToolbar, useDevicePreview } from '../../shared/device-preview';
 import ImageCropField from '../../shared/image-crop/ImageCropField';
 import { createEditableImage, getEditableImageStyle, type EditableImage } from '../../shared/image-crop/image-crop';
 import { ThemeToggle } from '../../shared/theme/ThemeToggle';
@@ -59,8 +60,9 @@ interface AppliedCard {
   textColor: string;
 }
 
-export default function YoutubeMusicPlayerApp() {
+function YoutubeMusicPlayerContent() {
   const { theme } = useTheme();
+  const { outputSize, valid } = useDevicePreview();
 
   // ---- フォーム入力 ----
   const [title, setTitle] = useState('');
@@ -166,7 +168,8 @@ export default function YoutubeMusicPlayerApp() {
   }
 
   function handleCapture() {
-    capture(cardRef.current, 'youtube_music_player.png').catch((error: unknown) => {
+    if (!valid) return;
+    capture(cardRef.current, 'youtube_music_player.png', outputSize).catch((error: unknown) => {
       const message = error instanceof Error ? error.message : String(error);
       alert(message);
     });
@@ -191,7 +194,10 @@ export default function YoutubeMusicPlayerApp() {
 
         {/* ---- Center: YouTube Music player preview ---- */}
         <div id="capture-area" className="flex w-full justify-center max-md:w-auto">
-          <div className="ym-card" id="player-card" ref={cardRef} style={cardStyle}>
+          <div className="device-preview-stack">
+            <DeviceToolbar />
+            <DeviceCanvas>
+              <div className="ym-card" id="player-card" ref={cardRef} style={cardStyle}>
 
             {/* Top bar */}
             <div className="ym-topbar">
@@ -304,6 +310,8 @@ export default function YoutubeMusicPlayerApp() {
             {/* Copyright */}
             <div className="ym-copyright" id="copyright-text">{applied.copyright}</div>
 
+              </div>
+            </DeviceCanvas>
           </div>
         </div>
 
@@ -372,7 +380,7 @@ export default function YoutubeMusicPlayerApp() {
 
           <div className="flex flex-col gap-2.5">
             <button className="btn-primary btn-apply" id="btn-update" type="button" onClick={() => applyPreview()}>適用してプレビュー</button>
-            <button className="btn-primary btn-save" id="btn-capture" type="button" onClick={handleCapture} disabled={capturing}>
+            <button className="btn-primary btn-save" id="btn-capture" type="button" onClick={handleCapture} disabled={capturing || !valid}>
               {capturing ? '画像を生成中…' : '画像として保存'}
             </button>
           </div>
@@ -381,4 +389,8 @@ export default function YoutubeMusicPlayerApp() {
       </div>
     </div>
   );
+}
+
+export default function YoutubeMusicPlayerApp() {
+  return <DevicePreviewProvider><YoutubeMusicPlayerContent /></DevicePreviewProvider>;
 }

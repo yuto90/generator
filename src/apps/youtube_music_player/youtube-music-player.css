@@ -6,6 +6,8 @@
   --glass-border: rgba(255, 255, 255, 0.08);
   --gen-accent: #ff0000;
 }
+.app-ytmusic .device-preview-stack { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
+.app-ytmusic .device-canvas { border-radius: 34px; }
 :root[data-theme='light'] .app-ytmusic {
   --glass-bg: rgba(255, 255, 255, 0.76);
   --glass-border: rgba(55, 20, 20, 0.13);
@@ -194,6 +196,7 @@
     0 24px 64px rgba(0, 0, 0, 0.6),
     0 1px 0 rgba(255, 255, 255, 0.08) inset;
 }
+.app-ytmusic .device-canvas__content > .ym-card { width: 100%; height: 100%; max-width: none; border-radius: 34px; }
 
 /* top bar */
 .app-ytmusic .ym-topbar {

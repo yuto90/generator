@@ -157,4 +157,21 @@ describe('Spotify保存ステータス', () => {
     expect(button).not.toBeDisabled();
     expect(button).toHaveTextContent('画像として保存');
   });
+
+  test('選択した論理サイズをSnapDOMへ渡し、編集パネルを保存対象に含めない', async () => {
+    const user = userEvent.setup();
+    renderApp(<InstagramReelApp />);
+    await user.click(screen.getByRole('button', { name: '画像として保存' }));
+    await waitFor(() => expect(download).toHaveBeenCalledOnce());
+    expect(captureSnap).toHaveBeenCalledWith(expect.any(HTMLElement), expect.objectContaining({
+      format: 'png',
+      scale: 1,
+      dpr: 1,
+      width: expect.any(Number),
+      height: expect.any(Number),
+    }));
+    const [target] = captureSnap.mock.calls[0] as [HTMLElement, Record<string, unknown>];
+    expect(target).not.toBe(document.querySelector('.editor'));
+    expect(target).not.toBe(document.querySelector('[data-device-toolbar]'));
+  });
 });

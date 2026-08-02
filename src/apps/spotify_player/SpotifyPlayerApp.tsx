@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { useCapture } from '../../shared/capture/useCapture';
+import { DeviceCanvas, DevicePreviewProvider, DeviceToolbar, useDevicePreview } from '../../shared/device-preview';
 import ImageCropField from '../../shared/image-crop/ImageCropField';
 import { createEditableImage, getEditableImageStyle } from '../../shared/image-crop/image-crop';
 import { calculateProgress, formatTime, parseTime } from '../../shared/player/player-utils';
@@ -42,7 +43,9 @@ interface Status {
   tone: '' | 'success' | 'error';
 }
 
-export default function SpotifyPlayerApp() {
+function SpotifyPlayerContent() {
+  const { outputSize, valid } = useDevicePreview();
+
   // ---- フォーム入力 ----
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
@@ -237,9 +240,10 @@ export default function SpotifyPlayerApp() {
   }
 
   async function handleCapture() {
+    if (!valid) return;
     setStatus({ text: '画像を生成しています…', tone: '' });
     try {
-      await capture(cardRef.current, 'spotify_player.png');
+      await capture(cardRef.current, 'spotify_player.png', outputSize);
       setStatus({ text: '保存操作を開始しました', tone: 'success' });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -253,7 +257,10 @@ export default function SpotifyPlayerApp() {
     <div className="app-spotify">
       <div className="app-shell">
         <section className="preview-stage" aria-label="プレーヤープレビュー">
-          <article className="spotify-card" id="player-card" ref={cardRef}>
+          <div className="device-preview-stack">
+            <DeviceToolbar />
+            <DeviceCanvas>
+              <article className="spotify-card" id="player-card" ref={cardRef}>
             <div className="card-topbar">
               <button className="icon-button" type="button" aria-label="閉じる">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.3 8.7a1 1 0 0 1 1.4 0l5.3 5.3 5.3-5.3a1 1 0 1 1 1.4 1.4l-6 6a1 1 0 0 1-1.4 0l-6-6a1 1 0 0 1 0-1.4z" /></svg>
@@ -354,7 +361,9 @@ export default function SpotifyPlayerApp() {
               </div>
               <svg className="queue-icon" viewBox="0 0 24 24" aria-label="キュー"><path d="M4 5h16v2H4V5zm0 6h10v2H4v-2zm0 6h10v2H4v-2zm13-5 5 3-5 3v-6z" /></svg>
             </div>
-          </article>
+              </article>
+            </DeviceCanvas>
+          </div>
         </section>
 
         <aside className="editor" aria-label="編集パネル">
@@ -451,7 +460,7 @@ export default function SpotifyPlayerApp() {
                 id="btn-capture"
                 type="button"
                 onClick={handleCapture}
-                disabled={capturing}
+                disabled={capturing || !valid}
               >
                 {capturing ? '画像を生成中…' : '画像として保存'}
               </button>
@@ -461,4 +470,8 @@ export default function SpotifyPlayerApp() {
       </div>
     </div>
   );
+}
+
+export default function SpotifyPlayerApp() {
+  return <DevicePreviewProvider><SpotifyPlayerContent /></DevicePreviewProvider>;
 }
