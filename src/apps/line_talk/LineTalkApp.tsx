@@ -225,7 +225,6 @@ export default function LineTalkApp() {
           >
             <header className="line-talk-header">
               <span className="line-talk-header-icon" aria-hidden="true">‹</span>
-              <span className="line-talk-header-avatar" aria-hidden="true">{applied.partnerName.slice(0, 1)}</span>
               <div className="line-talk-header-copy">
                 <strong>{applied.partnerName}</strong>
                 <span>オンライン</span>

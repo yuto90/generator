@@ -36,6 +36,7 @@ describe('LineTalkApp', () => {
     expect(screen.getByLabelText('相手の名前')).toHaveValue('あかり');
     expect(screen.getAllByTestId('line-talk-preview-message')).toHaveLength(3);
     expect(screen.getByTestId('line-talk-preview')).toHaveClass('line-talk-preview');
+    expect(screen.getByTestId('line-talk-preview').querySelector('.line-talk-header-avatar')).toBeNull();
     expect(screen.getByRole('button', { name: '適用してプレビュー' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '画像として保存' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'メッセージを追加' })).toBeInTheDocument();
