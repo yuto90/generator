@@ -26,6 +26,7 @@ export interface TalkFieldError {
 export interface TalkValidationErrors {
   partnerName?: string;
   messageCount?: string;
+  totalNewlines?: string;
   messages: Record<string, TalkFieldError>;
 }
 
@@ -60,6 +61,7 @@ const MAX_MESSAGES = 20;
 const MAX_MESSAGE_TEXT_LENGTH = 200;
 const MAX_MESSAGE_INPUT_LENGTH = MAX_MESSAGE_TEXT_LENGTH * 2;
 const MAX_MESSAGE_NEWLINES = 10;
+const MAX_TOTAL_MESSAGE_NEWLINES = 40;
 
 function countMessageText(text: string) {
   return text.replace(/\s/g, '').length;
@@ -81,6 +83,14 @@ export function validateTalkContent(content: TalkContent): TalkValidationErrors 
 
   if (content.messages.length < 1 || content.messages.length > MAX_MESSAGES) {
     errors.messageCount = 'メッセージは1〜20件で入力してください';
+  }
+
+  const totalNewlines = content.messages.reduce(
+    (total, message) => total + countMessageNewlines(message.text),
+    0,
+  );
+  if (totalNewlines > MAX_TOTAL_MESSAGE_NEWLINES) {
+    errors.totalNewlines = `メッセージ全体の改行は${MAX_TOTAL_MESSAGE_NEWLINES}回以内で入力してください`;
   }
 
   content.messages.forEach(message => {
@@ -108,6 +118,7 @@ function hasValidationErrors(errors: TalkValidationErrors) {
   return Boolean(
     errors.partnerName ||
       errors.messageCount ||
+      errors.totalNewlines ||
       Object.values(errors.messages).some(messageErrors => messageErrors.text || messageErrors.time),
   );
 }
@@ -316,11 +327,17 @@ export default function LineTalkApp() {
           {errors.messageCount && (
             <p className="line-talk-error" id="line-talk-message-count-error" role="alert">{errors.messageCount}</p>
           )}
+          {errors.totalNewlines && (
+            <p className="line-talk-error" id="line-talk-message-newline-error" role="alert">{errors.totalNewlines}</p>
+          )}
 
           <div
             className="line-talk-editor-messages"
-            aria-invalid={Boolean(errors.messageCount)}
-            aria-describedby={errors.messageCount ? 'line-talk-message-count-error' : undefined}
+            aria-invalid={Boolean(errors.messageCount || errors.totalNewlines)}
+            aria-describedby={[
+              errors.messageCount && 'line-talk-message-count-error',
+              errors.totalNewlines && 'line-talk-message-newline-error',
+            ].filter(Boolean).join(' ') || undefined}
           >
             {draft.messages.map((message, index) => {
               const messageErrors = errors.messages[message.id] ?? {};

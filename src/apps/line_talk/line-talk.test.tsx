@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ThemeProvider } from '../../shared/theme/ThemeContext';
 import LineTalkApp from './LineTalkApp';
@@ -176,6 +176,45 @@ describe('LineTalkApp', () => {
 
     expect(screen.getByText('本文の改行は10回以内で入力してください')).toBeInTheDocument();
     expect(text).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  test('会話全体の改行が上限ちょうどなら適用できる', async () => {
+    const user = userEvent.setup();
+    renderApp();
+    await user.click(screen.getByRole('button', { name: 'メッセージを追加' }));
+    const messageText = `あ${'\n'.repeat(10)}`;
+    for (const field of screen.getAllByLabelText(/の本文$/)) {
+      fireEvent.change(field, { target: { value: messageText } });
+    }
+
+    await user.click(screen.getByRole('button', { name: '適用してプレビュー' }));
+
+    expect(screen.queryByText('メッセージ全体の改行は40回以内で入力してください')).not.toBeInTheDocument();
+    expect(screen.getAllByTestId('line-talk-preview-message')).toHaveLength(4);
+  });
+
+  test('会話全体の改行が上限を超えると適用済みプレビューを維持し、一覧を無効状態にする', async () => {
+    const user = userEvent.setup();
+    renderApp();
+    const add = screen.getByRole('button', { name: 'メッセージを追加' });
+    for (let index = 0; index < 17; index += 1) {
+      await user.click(add);
+    }
+    const messageText = `あ${'\n'.repeat(10)}`;
+    for (const field of screen.getAllByLabelText(/の本文$/)) {
+      fireEvent.change(field, { target: { value: messageText } });
+    }
+    const preview = screen.getByTestId('line-talk-preview');
+    const originalPreviewText = screen.getAllByTestId('line-talk-preview-message')[0].textContent;
+
+    await user.click(screen.getByRole('button', { name: '適用してプレビュー' }));
+
+    expect(screen.getByText('メッセージ全体の改行は40回以内で入力してください')).toBeInTheDocument();
+    const messageList = document.querySelector('.line-talk-editor-messages');
+    expect(messageList).toHaveAttribute('aria-invalid', 'true');
+    expect(messageList).toHaveAttribute('aria-describedby', 'line-talk-message-newline-error');
+    expect(preview).toHaveTextContent(originalPreviewText ?? '');
+    expect(screen.getAllByTestId('line-talk-preview-message')).toHaveLength(3);
   });
 
   test('プレビュー列はmainではないランドマークで構成する', () => {
