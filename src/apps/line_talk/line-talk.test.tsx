@@ -200,6 +200,46 @@ describe('LineTalkApp', () => {
     expect(previewMessages[1]).not.toHaveTextContent('既読');
   });
 
+  test('狭幅プレビューの保存では測定幅を複製へ渡し、完了後に元の幅指定を戻す', async () => {
+    const user = userEvent.setup();
+    renderApp();
+    const preview = screen.getByTestId('line-talk-preview');
+    vi.spyOn(preview, 'getBoundingClientRect').mockReturnValue({ width: 355 } as DOMRect);
+    captureSnap.mockImplementation(async (captureTarget: HTMLElement) => {
+      expect(captureTarget.style.width).toBe('355px');
+      return {
+        toCanvas: vi.fn().mockResolvedValue(document.createElement('canvas')),
+        download,
+      };
+    });
+
+    await user.click(screen.getByRole('button', { name: '画像として保存' }));
+
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('保存操作を開始しました'));
+    expect(preview.style.width).toBe('');
+  });
+
+  test('狭幅プレビューの保存に失敗しても一時的な幅指定を復元する', async () => {
+    const user = userEvent.setup();
+    renderApp();
+    const preview = screen.getByTestId('line-talk-preview');
+    preview.style.width = 'calc(100% - 1px)';
+    vi.spyOn(preview, 'getBoundingClientRect').mockReturnValue({ width: 355 } as DOMRect);
+    captureSnap.mockImplementation(async (captureTarget: HTMLElement) => {
+      expect(captureTarget.style.width).toBe('355px');
+      return {
+        toCanvas: vi.fn().mockResolvedValue(document.createElement('canvas')),
+        download,
+      };
+    });
+    download.mockRejectedValueOnce(new Error('renderer failed'));
+
+    await user.click(screen.getByRole('button', { name: '画像として保存' }));
+
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('画像を生成できませんでした。ページを再読み込みして、もう一度お試しください。'));
+    expect(preview.style.width).toBe('calc(100% - 1px)');
+  });
+
   test('保存中は再押下を無効化し、line_talk.pngで保存する', async () => {
     let resolveDownload!: () => void;
     download.mockReturnValueOnce(new Promise<void>(resolve => { resolveDownload = resolve; }));

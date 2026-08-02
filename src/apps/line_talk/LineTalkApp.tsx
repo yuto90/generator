@@ -205,11 +205,19 @@ export default function LineTalkApp() {
   }
 
   async function saveImage() {
+    const preview = previewRef.current;
+    const originalWidth = preview?.style.width ?? '';
     try {
-      await capture(previewRef.current, 'line_talk.png');
+      if (preview) {
+        const measuredWidth = preview.getBoundingClientRect().width;
+        if (measuredWidth > 0) preview.style.width = `${measuredWidth}px`;
+      }
+      await capture(preview, 'line_talk.png');
       setSaveStatus('保存操作を開始しました');
     } catch (error: unknown) {
       setSaveStatus(error instanceof Error ? error.message : '画像を生成できませんでした。もう一度お試しください。');
+    } finally {
+      if (preview) preview.style.width = originalWidth;
     }
   }
 
