@@ -191,10 +191,14 @@ export function parseDevicePreviewSettings(value: unknown): DevicePreviewSetting
   const presetId = typeof candidate.presetId === 'string' && DEVICE_PRESETS.some(preset => preset.id === candidate.presetId)
     ? candidate.presetId
     : DEFAULT_DEVICE_PREVIEW_SETTINGS.presetId;
+  const hasSupportedPreset = typeof candidate.presetId === 'string' && DEVICE_PRESETS.some(preset => preset.id === candidate.presetId);
   const custom = isCustom(candidate.custom)
     ? { width: candidate.custom.width, height: candidate.custom.height }
     : { ...DEFAULT_DEVICE_PREVIEW_SETTINGS.custom };
   const mode = isMode(candidate.mode) ? candidate.mode : DEFAULT_DEVICE_PREVIEW_SETTINGS.mode;
+  if (mode === 'preset' && !hasSupportedPreset) {
+    return { ...DEFAULT_DEVICE_PREVIEW_SETTINGS, custom: { ...DEFAULT_DEVICE_PREVIEW_SETTINGS.custom } };
+  }
   if (mode === 'custom' && hasCustomSizeErrors(validateCustomSize(custom))) {
     return { ...DEFAULT_DEVICE_PREVIEW_SETTINGS, custom: { ...DEFAULT_DEVICE_PREVIEW_SETTINGS.custom } };
   }

@@ -56,4 +56,15 @@ describe('DevicePreviewProvider', () => {
     expect(screen.getByTestId('mode')).toHaveTextContent('device');
     expect(JSON.parse(window.localStorage.getItem('generator-device-preview') ?? '{}')).toMatchObject({ mode: 'device' });
   });
+
+  test.each([
+    ['未対応presetId', { mode: 'preset', presetId: 'retired-device', custom: { width: '320', height: '568' } }],
+    ['欠落presetId', { mode: 'preset', custom: { width: '320', height: '568' } }],
+  ])('localStorageの%sをこの端末へ復旧して保存し直す', (_label, value) => {
+    window.localStorage.setItem('generator-device-preview', JSON.stringify(value));
+    render(<DevicePreviewProvider><Probe /></DevicePreviewProvider>);
+    expect(screen.getByTestId('mode')).toHaveTextContent('device');
+    expect(screen.getByTestId('size')).toHaveTextContent('390x844');
+    expect(JSON.parse(window.localStorage.getItem('generator-device-preview') ?? '{}')).toMatchObject({ mode: 'device', presetId: 'iphone-se' });
+  });
 });

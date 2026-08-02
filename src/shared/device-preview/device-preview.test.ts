@@ -65,4 +65,22 @@ describe('device preview size logic', () => {
       custom: { width: '375', height: '667' },
     });
   });
+
+  test('未対応または欠落したプリセットをactive modeから安全に復旧する', () => {
+    const expected = {
+      mode: 'device' as const,
+      presetId: 'iphone-se',
+      custom: { width: '375', height: '667' },
+    };
+    expect(parseDevicePreviewSettings({ mode: 'preset', presetId: 'retired-device', custom: { width: '320', height: '568' } })).toEqual(expected);
+    expect(parseDevicePreviewSettings({ mode: 'preset', custom: { width: '320', height: '568' } })).toEqual(expected);
+  });
+
+  test('active modeでない不正presetIdは既存設定を維持する', () => {
+    expect(parseDevicePreviewSettings({ mode: 'custom', presetId: 'retired-device', custom: { width: '320', height: '568' } })).toEqual({
+      mode: 'custom',
+      presetId: 'iphone-se',
+      custom: { width: '320', height: '568' },
+    });
+  });
 });
