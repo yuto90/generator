@@ -18,9 +18,11 @@ interface DevicePreviewContextValue {
   adjusted: boolean;
   valid: boolean;
   customErrors: CustomSizeErrors;
+  displayScale: number;
   setMode: (mode: DevicePreviewMode) => void;
   setPreset: (presetId: string) => void;
   setCustom: (custom: CustomDeviceSize) => void;
+  setDisplayScale: (scale: number) => void;
 }
 
 const DevicePreviewContext = createContext<DevicePreviewContextValue | null>(null);
@@ -56,6 +58,7 @@ export function DevicePreviewProvider({ children, storage }: DevicePreviewProvid
   const storageTarget = storage === undefined ? getBrowserStorage() : storage;
   const [settings, setSettings] = useState<DevicePreviewSettings>(() => readDevicePreviewSettings(storageTarget));
   const [viewport, setViewport] = useState<DeviceSize>(() => getViewport());
+  const [displayScale, setDisplayScaleState] = useState(1);
 
   useEffect(() => {
     const updateViewport = () => {
@@ -86,6 +89,10 @@ export function DevicePreviewProvider({ children, storage }: DevicePreviewProvid
   const setCustom = useCallback((custom: CustomDeviceSize) => {
     setSettings(previous => ({ ...previous, mode: 'custom', custom }));
   }, []);
+  const setDisplayScale = useCallback((scale: number) => {
+    const next = Number.isFinite(scale) && scale > 0 ? Math.min(1, scale) : 1;
+    setDisplayScaleState(previous => previous === next ? previous : next);
+  }, []);
 
   const effective = useMemo(() => getEffectiveDeviceSize(settings, viewport), [settings, viewport]);
   const value = useMemo<DevicePreviewContextValue>(() => ({
@@ -95,10 +102,12 @@ export function DevicePreviewProvider({ children, storage }: DevicePreviewProvid
     adjusted: effective.adjusted,
     valid: effective.valid,
     customErrors: effective.errors,
+    displayScale,
     setMode,
     setPreset,
     setCustom,
-  }), [effective, settings, setCustom, setMode, setPreset, viewport]);
+    setDisplayScale,
+  }), [displayScale, effective, settings, setCustom, setDisplayScale, setMode, setPreset, viewport]);
 
   return <DevicePreviewContext.Provider value={value}>{children}</DevicePreviewContext.Provider>;
 }

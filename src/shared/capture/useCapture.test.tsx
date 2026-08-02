@@ -45,6 +45,7 @@ describe('useCapture', () => {
       expect((captureTarget as HTMLElement).style.transformOrigin).toBe('top left');
       expect((captureTarget as HTMLElement).style.width).toBe('375px');
       expect((captureTarget as HTMLElement).style.height).toBe('667px');
+      expect((captureTarget as HTMLElement).style.containerType).toBe('size');
       const captureArtwork = captureTarget.firstElementChild as HTMLElement;
       expect(captureArtwork.style.backgroundRepeat).toBe('no-repeat');
       expect(options).toEqual({

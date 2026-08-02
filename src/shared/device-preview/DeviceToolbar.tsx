@@ -1,6 +1,6 @@
 import { useId, type KeyboardEvent } from 'react';
 import { useDevicePreview } from './DevicePreviewContext';
-import { DEVICE_PRESETS, getDisplayScale, hasCustomSizeErrors, type DevicePreviewMode } from './device-preview';
+import { DEVICE_PRESETS, hasCustomSizeErrors, type DevicePreviewMode } from './device-preview';
 import './device-preview.css';
 
 const MODES: readonly { id: DevicePreviewMode; label: string }[] = [
@@ -16,8 +16,8 @@ export interface DeviceToolbarProps {
 export function DeviceToolbar({ className = '' }: DeviceToolbarProps) {
   const {
     settings,
-    viewport,
     outputSize,
+    displayScale,
     adjusted,
     valid,
     customErrors,
@@ -28,10 +28,6 @@ export function DeviceToolbar({ className = '' }: DeviceToolbarProps) {
   const id = useId();
   const errorId = `${id}-errors`;
   const hasErrors = hasCustomSizeErrors(customErrors);
-  const displayScale = getDisplayScale(outputSize, {
-    width: Math.max(280, viewport.width - 64),
-    height: Math.max(420, viewport.height - 220),
-  });
 
   function handleModeKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
     const index = MODES.findIndex(mode => mode.id === settings.mode);

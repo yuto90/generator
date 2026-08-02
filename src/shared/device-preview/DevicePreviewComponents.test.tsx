@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, test } from 'vitest';
 import { DeviceCanvas } from './DeviceCanvas';
 import { DevicePreviewProvider } from './DevicePreviewContext';
@@ -9,6 +9,17 @@ function Preview() {
     <DevicePreviewProvider>
       <DeviceToolbar />
       <DeviceCanvas><div data-testid="content">プレビュー</div></DeviceCanvas>
+    </DevicePreviewProvider>
+  );
+}
+
+function StableStagePreview() {
+  return (
+    <DevicePreviewProvider>
+      <div data-device-preview-stage>
+        <DeviceToolbar />
+        <DeviceCanvas><div data-testid="stable-content">プレビュー</div></DeviceCanvas>
+      </div>
     </DevicePreviewProvider>
   );
 }
@@ -52,5 +63,43 @@ describe('DeviceToolbar / DeviceCanvas', () => {
     expect(canvas).toHaveAttribute('data-output-width', '390');
     expect(canvas).toHaveAttribute('data-output-height', '844');
     expect(canvas).toHaveStyle({ width: '390px', height: '844px' });
+  });
+
+  test('iPad Pro相当の固定viewportでも利用可能領域内に収まり、Toolbarの倍率と実transformが一致する', async () => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 });
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 1366 });
+    render(<Preview />);
+    const canvas = screen.getByTestId('content').closest('[data-device-canvas]') as HTMLElement;
+    const frame = canvas.parentElement as HTMLElement;
+    await waitFor(() => {
+      const scale = Number(frame.dataset.displayScale);
+      expect(scale).toBeLessThanOrEqual(1);
+      expect(Number.parseFloat(frame.style.width)).toBeLessThanOrEqual(1024);
+      expect(Number.parseFloat(frame.style.height)).toBeLessThanOrEqual(1146);
+      expect(screen.getByText(`表示倍率 ${Math.round(scale * 100)}%`)).toBeInTheDocument();
+    });
+  });
+
+  test('auto-heightの親ではなく編集ステージの安定高から縮小率を計算する', async () => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 });
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 1366 });
+    const originalRect = HTMLElement.prototype.getBoundingClientRect;
+    HTMLElement.prototype.getBoundingClientRect = function () {
+      if (this.matches('[data-device-preview-stage]')) return { width: 900, height: 900, top: 0, left: 0, right: 900, bottom: 900, x: 0, y: 0, toJSON: () => ({}) } as DOMRect;
+      if (this.matches('[data-device-toolbar]')) return { width: 680, height: 80, top: 0, left: 0, right: 680, bottom: 80, x: 0, y: 0, toJSON: () => ({}) } as DOMRect;
+      return originalRect.call(this);
+    };
+    try {
+      render(<StableStagePreview />);
+      const canvas = screen.getByTestId('stable-content').closest('[data-device-canvas]') as HTMLElement;
+      const frame = canvas.parentElement as HTMLElement;
+      await waitFor(() => {
+        const scale = Number(frame.dataset.displayScale);
+        expect(Number.parseFloat(frame.style.height)).toBeLessThanOrEqual(808);
+        expect(screen.getByText(`表示倍率 ${Math.round(scale * 100)}%`)).toBeInTheDocument();
+      });
+    } finally {
+      HTMLElement.prototype.getBoundingClientRect = originalRect;
+    }
   });
 });

@@ -180,6 +180,7 @@ function AppleMusicPlayerContent() {
     color: applied.textColor,
     '--player-point': applied.pointColor,
     '--player-text': applied.textColor,
+    containerType: 'size',
   } as CSSProperties;
 
   return (
@@ -190,7 +191,7 @@ function AppleMusicPlayerContent() {
         ref={yt.containerRef}
       />
 
-      <div className="maker-layout relative flex min-h-screen w-full max-w-[1500px] mx-auto items-center justify-center pr-[340px] max-md:flex-col max-md:px-4 max-md:py-6 max-md:gap-4 max-md:min-h-0 max-md:justify-start">
+      <div className="maker-layout relative flex min-h-screen w-full max-w-[1500px] mx-auto items-center justify-center pr-[340px] max-md:flex-col max-md:px-4 max-md:py-6 max-md:gap-4 max-md:min-h-0 max-md:justify-start" data-device-preview-stage>
 
         {/* ---- Center: Apple Music player preview ---- */}
         <div id="capture-area" className="flex w-full justify-center max-md:w-auto">

@@ -51,6 +51,7 @@ function createCaptureTarget(element: HTMLElement, size: DeviceSize) {
     maxWidth: `${size.width}px`,
     maxHeight: `${size.height}px`,
     boxSizing: 'border-box',
+    containerType: 'size',
     transform: 'none',
     transformOrigin: 'top left',
   });

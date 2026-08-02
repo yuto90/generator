@@ -105,6 +105,20 @@ describe('InstagramReelApp', () => {
   });
 });
 
+describe('正方形大型キャンバスのcontainer条件', () => {
+  test.each([
+    ['AppleMusicPlayerApp', () => <AppleMusicPlayerApp />, 'player-card'],
+    ['YoutubeMusicPlayerApp', () => <YoutubeMusicPlayerApp />, 'player-card'],
+    ['SpotifyPlayerApp', () => <SpotifyPlayerApp />, 'player-card'],
+  ])('%sはカードをsize containerとして保存cloneと同じ条件で評価できる', (_name, createApp, cardId) => {
+    renderApp(createApp());
+    const card = document.getElementById(cardId) as HTMLElement;
+    expect(card).toBeInTheDocument();
+    expect(card.style.containerType).toBe('size');
+    expect(card.closest('[data-device-canvas]')).toBeInTheDocument();
+  });
+});
+
 describe('画像保存ボタン', () => {
   test.each([
     ['AppleMusicPlayerApp', () => <AppleMusicPlayerApp />],
