@@ -34,6 +34,28 @@ describe('DevicePreviewProvider', () => {
     expect(screen.getByTestId('size')).toHaveTextContent('390x844');
   });
 
+  test('visualViewportだけのresizeでは保存サイズを変えない', () => {
+    const originalDescriptor = Object.getOwnPropertyDescriptor(window, 'visualViewport');
+    const visualViewport = Object.assign(new EventTarget(), { width: 300, height: 600 }) as unknown as VisualViewport;
+    Object.defineProperty(window, 'visualViewport', { configurable: true, value: visualViewport });
+    try {
+      render(<DevicePreviewProvider><Probe /></DevicePreviewProvider>);
+      expect(screen.getByTestId('size')).toHaveTextContent('390x844');
+
+      act(() => {
+        Object.assign(visualViewport, { width: 320, height: 640 });
+        visualViewport.dispatchEvent(new Event('resize'));
+      });
+      expect(screen.getByTestId('size')).toHaveTextContent('390x844');
+    } finally {
+      if (originalDescriptor) {
+        Object.defineProperty(window, 'visualViewport', originalDescriptor);
+      } else {
+        Reflect.deleteProperty(window, 'visualViewport');
+      }
+    }
+  });
+
   test('モードとカスタムサイズを共有localStorageへ保存・復元する', () => {
     const first = render(<DevicePreviewProvider><Probe /></DevicePreviewProvider>);
     act(() => screen.getByRole('button', { name: 'カスタム' }).click());

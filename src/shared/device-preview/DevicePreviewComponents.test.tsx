@@ -1,8 +1,14 @@
 import { act, render, screen, waitFor } from '@testing-library/react';
+// VitestはNode環境で実行するため、CSS契約の読み取りにNode標準APIを使う。
+// 本番ビルド対象外のテストで、リポジトリにNode型依存を追加しない。
+// @ts-expect-error Node型は本番TypeScript設定に含めない。
+import { readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, test } from 'vitest';
 import { DeviceCanvas } from './DeviceCanvas';
 import { DevicePreviewProvider } from './DevicePreviewContext';
 import { DeviceToolbar } from './DeviceToolbar';
+
+const devicePreviewCss = readFileSync('src/shared/device-preview/device-preview.css', 'utf8');
 
 function Preview() {
   return (
@@ -42,6 +48,11 @@ describe('DeviceToolbar / DeviceCanvas', () => {
     window.localStorage.clear();
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
     Object.defineProperty(window, 'innerHeight', { configurable: true, value: 844 });
+  });
+
+  test('toolbarのライト配色はOS設定ではなく共通theme属性に従う', () => {
+    expect(devicePreviewCss).toContain(":root[data-theme='light'] .device-toolbar");
+    expect(devicePreviewCss).not.toMatch(/@media\s*\(prefers-color-scheme:\s*light\)/);
   });
 
   test('3種類のモードをキーボードで切り替え、サイズと縮小率を通知する', () => {

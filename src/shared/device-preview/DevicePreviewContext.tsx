@@ -29,10 +29,12 @@ const DevicePreviewContext = createContext<DevicePreviewContextValue | null>(nul
 
 function getViewport(): DeviceSize {
   if (typeof window === 'undefined') return { width: 375, height: 667 };
-  const visualViewport = window.visualViewport;
+  const layoutViewport = window.document.documentElement;
   return {
-    width: visualViewport?.width || window.innerWidth || 375,
-    height: visualViewport?.height || window.innerHeight || 667,
+    // visualViewportはアドレスバー・キーボード・ピンチズームで変動するため、
+    // 「この端末」の保存サイズにはレイアウトviewportだけを使う。
+    width: layoutViewport?.clientWidth || window.innerWidth || 375,
+    height: layoutViewport?.clientHeight || window.innerHeight || 667,
   };
 }
 
@@ -68,11 +70,9 @@ export function DevicePreviewProvider({ children, storage }: DevicePreviewProvid
     updateViewport();
     window.addEventListener('resize', updateViewport);
     window.addEventListener('orientationchange', updateViewport);
-    window.visualViewport?.addEventListener('resize', updateViewport);
     return () => {
       window.removeEventListener('resize', updateViewport);
       window.removeEventListener('orientationchange', updateViewport);
-      window.visualViewport?.removeEventListener('resize', updateViewport);
     };
   }, []);
 
