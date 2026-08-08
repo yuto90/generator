@@ -17,6 +17,15 @@ export interface DeviceSize {
 export interface DevicePreset extends DeviceSize {
   id: string;
   label: string;
+  /** 保存PNGの物理解像度を算出するための密度。レイアウトは論理サイズで行う。 */
+  dpr?: number;
+  /** 端末仕様の丸めを含む保存PNGの物理解像度。 */
+  physicalSize?: DeviceSize;
+}
+
+export interface DeviceCaptureSize extends DeviceSize {
+  /** SnapDOMの画像リソース圧縮・ラスタライズに使う密度。 */
+  dpr: number;
 }
 
 export interface CustomDeviceSize {
@@ -40,8 +49,9 @@ export const DEVICE_PRESETS: readonly DevicePreset[] = [
   { id: 'iphone-se', label: 'iPhone SE', width: 375, height: 667 },
   { id: 'iphone-16-pro', label: 'iPhone 16 Pro', width: 402, height: 874 },
   { id: 'iphone-16-pro-max', label: 'iPhone 16 Pro Max', width: 440, height: 956 },
-  { id: 'pixel-10', label: 'Pixel 10', width: 412, height: 924 },
-  { id: 'pixel-9-pro-xl', label: 'Pixel 9 Pro XL', width: 448, height: 997 },
+  { id: 'pixel-10', label: 'Pixel 10', width: 412, height: 924, dpr: 2.625 },
+  { id: 'pixel-9-pro-xl', label: 'Pixel 9 Pro XL', width: 448, height: 997, dpr: 3, physicalSize: { width: 1344, height: 2992 } },
+  { id: 'pixel-10-pro-xl', label: 'Pixel 10 Pro XL', width: 448, height: 997, dpr: 3, physicalSize: { width: 1344, height: 2992 } },
   { id: 'ipad-mini', label: 'iPad Mini', width: 768, height: 1024 },
   { id: 'ipad-air', label: 'iPad Air', width: 820, height: 1180 },
   { id: 'ipad-pro', label: 'iPad Pro', width: 1024, height: 1366 },
@@ -159,6 +169,28 @@ export function getEffectiveDeviceSize(
   }
   const constrained = constrainPortraitSize(normalizePortraitSize(viewport.width, viewport.height));
   return { ...constrained, valid: true, errors };
+}
+
+function roundedPhysicalSize(size: DeviceSize, dpr: number): DeviceSize {
+  return {
+    width: Math.max(1, Math.round(size.width * dpr)),
+    height: Math.max(1, Math.round(size.height * dpr)),
+  };
+}
+
+/** プレビューの論理サイズと保存PNGの物理解像度を分離して返す。 */
+export function getDeviceCaptureSize(
+  settings: DevicePreviewSettings,
+  viewport: DeviceSize,
+): { layout: DeviceSize; physical: DeviceCaptureSize } {
+  const effective = getEffectiveDeviceSize(settings, viewport);
+  const preset = settings.mode === 'preset' ? getPreset(settings.presetId) : null;
+  const dpr = preset?.dpr ?? 1;
+  const physical = preset?.physicalSize ?? roundedPhysicalSize(effective.size, dpr);
+  return {
+    layout: effective.size,
+    physical: { ...physical, dpr },
+  };
 }
 
 export function getDisplayScale(size: DeviceSize, available: DeviceSize): number {

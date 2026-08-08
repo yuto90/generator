@@ -3,6 +3,7 @@ import {
   DEVICE_PRESETS,
   DEVICE_PREVIEW_LIMITS,
   constrainPortraitSize,
+  getDeviceCaptureSize,
   getEffectiveDeviceSize,
   getDisplayScale,
   normalizePortraitSize,
@@ -11,13 +12,14 @@ import {
 } from './device-preview';
 
 describe('device preview size logic', () => {
-  test('承認済み9プリセットを論理ピクセルで定義する', () => {
+  test('承認済みプリセットを論理ピクセルで定義する', () => {
     expect(DEVICE_PRESETS.map(({ label, width, height }) => ({ label, width, height }))).toEqual([
       { label: 'iPhone SE', width: 375, height: 667 },
       { label: 'iPhone 16 Pro', width: 402, height: 874 },
       { label: 'iPhone 16 Pro Max', width: 440, height: 956 },
       { label: 'Pixel 10', width: 412, height: 924 },
       { label: 'Pixel 9 Pro XL', width: 448, height: 997 },
+      { label: 'Pixel 10 Pro XL', width: 448, height: 997 },
       { label: 'iPad Mini', width: 768, height: 1024 },
       { label: 'iPad Air', width: 820, height: 1180 },
       { label: 'iPad Pro', width: 1024, height: 1366 },
@@ -51,6 +53,17 @@ describe('device preview size logic', () => {
     expect(getEffectiveDeviceSize({ mode: 'custom', presetId: 'iphone-se', custom: { width: '320', height: '568' } }, { width: 100, height: 100 })).toMatchObject({ size: { width: 320, height: 568 }, valid: true });
     expect(getEffectiveDeviceSize({ mode: 'custom', presetId: 'iphone-se', custom: { width: '400', height: '300' } }, { width: 100, height: 100 }).valid).toBe(false);
     expect(getDisplayScale({ width: 1000, height: 2000 }, { width: 500, height: 500 })).toBe(0.25);
+  });
+
+  test('Pixel XLは論理レイアウトと物理保存サイズを分離し、1px丸めを保持する', () => {
+    const result = getDeviceCaptureSize({ mode: 'preset', presetId: 'pixel-10-pro-xl', custom: { width: '320', height: '568' } }, { width: 390, height: 844 });
+    expect(result.layout).toEqual({ width: 448, height: 997 });
+    expect(result.physical).toEqual({ width: 1344, height: 2992, dpr: 3 });
+
+    const pixel10 = getDeviceCaptureSize({ mode: 'preset', presetId: 'pixel-10', custom: { width: '320', height: '568' } }, { width: 390, height: 844 });
+    expect(pixel10.physical).toEqual({ width: 1082, height: 2426, dpr: 2.625 });
+    const custom = getDeviceCaptureSize({ mode: 'custom', presetId: 'pixel-10-pro-xl', custom: { width: '320', height: '568' } }, { width: 390, height: 844 });
+    expect(custom.physical).toEqual({ width: 320, height: 568, dpr: 1 });
   });
 
   test('不正な永続化値は安全な初期値へ復旧する', () => {

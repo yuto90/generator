@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import { snapdom } from '@zumer/snapdom';
-import type { DeviceSize } from '../device-preview/device-preview';
+import type { DeviceCaptureSize, DeviceSize } from '../device-preview/device-preview';
 
 const TARGET_ERROR = '保存対象が見つかりませんでした。ページを再読み込みして、もう一度お試しください。';
 const IMAGE_ERROR = '画像を読み込めませんでした。画像を選び直して、もう一度お試しください。';
@@ -81,27 +81,40 @@ export function useCapture() {
   const [capturing, setCapturing] = useState(false);
   const captureLock = useRef(false);
 
-  const capture = useCallback(async (element: HTMLElement | null, fileName: string, outputSize?: DeviceSize) => {
+  const capture = useCallback(async (
+    element: HTMLElement | null,
+    fileName: string,
+    layoutSize?: DeviceSize,
+    physicalSize?: DeviceCaptureSize,
+  ) => {
     if (captureLock.current) return;
     captureLock.current = true;
     let captureTarget: HTMLElement | null = null;
     setCapturing(true);
     try {
       if (!element) throw new CaptureError(TARGET_ERROR);
-      const size = outputSize ?? readElementSize(element);
+      const size = layoutSize ?? readElementSize(element);
+      const output = physicalSize ?? { ...size, dpr: 1 };
+      const hasExplicitOutputSize = Boolean(layoutSize || physicalSize);
       if (document.fonts?.ready) await document.fonts.ready;
       captureTarget = createCaptureTarget(element, size);
       const captureResult = await snapdom(captureTarget, {
         format: 'png',
         filename: fileName,
         scale: 1,
-        dpr: 1,
-        ...(outputSize ? { width: size.width, height: size.height } : {}),
+        dpr: output.dpr,
+        ...(hasExplicitOutputSize ? { width: output.width, height: output.height } : {}),
       });
       if (isSafari()) {
         // WebKitはforeignObject内のフォント・画像を最初のdrawImageで
         // 遅延描画するため、同じSVGを一度ラスタライズしてから保存する。
-        await captureResult.toCanvas();
+        await captureResult.toCanvas(hasExplicitOutputSize ? {
+          width: output.width,
+          height: output.height,
+          // SnapDOM 2.23.1のdownload()は内部でdpr:1を使うため、
+          // Safariの事前ラスタライズも保存PNGと同じ物理解像度へ合わせる。
+          dpr: 1,
+        } : undefined);
         await new Promise<void>((resolve) => {
           requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
         });

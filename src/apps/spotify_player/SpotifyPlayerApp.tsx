@@ -44,7 +44,7 @@ interface Status {
 }
 
 function SpotifyPlayerContent() {
-  const { outputSize, valid } = useDevicePreview();
+  const { outputSize, captureSize, valid } = useDevicePreview();
 
   // ---- フォーム入力 ----
   const [title, setTitle] = useState('');
@@ -243,7 +243,7 @@ function SpotifyPlayerContent() {
     if (!valid) return;
     setStatus({ text: '画像を生成しています…', tone: '' });
     try {
-      await capture(cardRef.current, 'spotify_player.png', outputSize);
+      await capture(cardRef.current, 'spotify_player.png', outputSize, captureSize);
       setStatus({ text: '保存操作を開始しました', tone: 'success' });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

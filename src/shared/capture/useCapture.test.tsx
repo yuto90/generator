@@ -74,6 +74,42 @@ describe('useCapture', () => {
     appRoot.remove();
   });
 
+  test('論理レイアウトを維持したままPixel XLの物理解像度へ保存する', async () => {
+    const appRoot = document.createElement('div');
+    appRoot.className = 'app-test';
+    const element = document.createElement('div');
+    appRoot.append(element);
+    document.body.append(appRoot);
+    captureSnap.mockImplementation(async (captureTarget: Element, options: Record<string, unknown>) => {
+      expect((captureTarget as HTMLElement).style.width).toBe('448px');
+      expect((captureTarget as HTMLElement).style.height).toBe('997px');
+      expect(options).toEqual({
+        format: 'png',
+        filename: 'pixel-xl.png',
+        scale: 1,
+        dpr: 3,
+        width: 1344,
+        height: 2992,
+      });
+      return { toCanvas: warmUp, download };
+    });
+    const { result } = renderHook(() => useCapture());
+
+    await act(async () => {
+      await result.current.capture(
+        element,
+        'pixel-xl.png',
+        { width: 448, height: 997 },
+        { width: 1344, height: 2992, dpr: 3 },
+      );
+    });
+
+    expect(warmUp).toHaveBeenCalledWith({ width: 1344, height: 2992, dpr: 1 });
+    expect(download).toHaveBeenCalledOnce();
+    expect(appRoot.children).toHaveLength(1);
+    appRoot.remove();
+  });
+
   test('保存用複製はカードの論理サイズ変数とsize container条件を引き継ぐ', async () => {
     const appRoot = document.createElement('div');
     appRoot.className = 'app-test';

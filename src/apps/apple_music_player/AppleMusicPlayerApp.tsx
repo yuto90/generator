@@ -62,7 +62,7 @@ interface AppliedCard {
 
 function AppleMusicPlayerContent() {
   const { theme } = useTheme();
-  const { outputSize, valid } = useDevicePreview();
+  const { outputSize, captureSize, valid } = useDevicePreview();
 
   // ---- フォーム入力 ----
   const [title, setTitle] = useState('');
@@ -169,7 +169,7 @@ function AppleMusicPlayerContent() {
 
   function handleCapture() {
     if (!valid) return;
-    capture(cardRef.current, 'apple_music_player.png', outputSize).catch((error: unknown) => {
+    capture(cardRef.current, 'apple_music_player.png', outputSize, captureSize).catch((error: unknown) => {
       const message = error instanceof Error ? error.message : String(error);
       alert(message);
     });

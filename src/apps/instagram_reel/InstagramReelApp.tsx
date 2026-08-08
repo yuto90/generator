@@ -53,7 +53,7 @@ const DEFAULT_CONTENT: ReelContent = {
 };
 
 function InstagramReelContent() {
-  const { outputSize, valid } = useDevicePreview();
+  const { outputSize, captureSize, valid } = useDevicePreview();
 
   const [username, setUsername] = useState('');
   const [caption, setCaption] = useState('');
@@ -85,7 +85,7 @@ function InstagramReelContent() {
 
   function handleCapture() {
     if (!valid) return;
-    capture(cardRef.current, 'instagram_reel.png', outputSize).catch((error: unknown) => {
+    capture(cardRef.current, 'instagram_reel.png', outputSize, captureSize).catch((error: unknown) => {
       const message = error instanceof Error ? error.message : String(error);
       alert(message);
     });

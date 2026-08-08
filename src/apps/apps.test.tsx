@@ -3,6 +3,10 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { ThemeProvider } from '../shared/theme/ThemeContext';
+
+// CSSのレイアウト契約をNode標準APIで検証する(本番コードへNode型を追加しない)。
+// @ts-expect-error Node型は本番TypeScript設定に含めない。
+import { readFileSync } from 'node:fs';
 import SpotifyPlayerApp from './spotify_player/SpotifyPlayerApp';
 import AppleMusicPlayerApp from './apple_music_player/AppleMusicPlayerApp';
 import YoutubeMusicPlayerApp from './youtube_music_player/YoutubeMusicPlayerApp';
@@ -10,12 +14,14 @@ import InstagramReelApp from './instagram_reel/InstagramReelApp';
 
 const captureSnap = vi.hoisted(() => vi.fn());
 const download = vi.hoisted(() => vi.fn<() => Promise<void>>());
+const youtubeMusicCss = readFileSync('src/apps/youtube_music_player/youtube-music-player.css', 'utf8');
 
 vi.mock('@zumer/snapdom', () => ({
   snapdom: captureSnap,
 }));
 
 beforeEach(() => {
+  window.localStorage.clear();
   download.mockReset();
   download.mockResolvedValue(undefined);
   captureSnap.mockReset();
@@ -84,6 +90,42 @@ describe('YoutubeMusicPlayerApp', () => {
     expect(bgPicker.value).toBe('#030303');
     expect(document.getElementById('time-total')).toHaveTextContent('-:--');
     expect(screen.getByRole('button', { name: 'トリミングを調整' })).toBeDisabled();
+  });
+
+  test('論理キャンバス全体を使い、旧固定カード比率の制約を持たない', () => {
+    renderApp(<YoutubeMusicPlayerApp />);
+
+    const card = document.getElementById('player-card');
+    expect(card).toHaveClass('ym-card');
+    expect(document.querySelector('.ym-song-info')).toBeInTheDocument();
+    expect(document.querySelector('.ym-progress')).toBeInTheDocument();
+    expect(document.querySelector('.ym-controls')).toBeInTheDocument();
+    expect(document.querySelector('.ym-volume')).toBeInTheDocument();
+    expect(youtubeMusicCss).toMatch(/\.ym-card\s*\{[\s\S]*width:\s*100%;[\s\S]*height:\s*100%;/);
+    expect(youtubeMusicCss).not.toMatch(/\.ym-card\s*\{[^}]*width:\s*340px/s);
+    expect(youtubeMusicCss).not.toContain('var(--device-preview-height, 100cqh) - 386px');
+    expect(youtubeMusicCss).toContain('border-radius: 0;');
+  });
+
+  test('Pixel 10 Pro XL選択時は論理448×997のまま1344×2992へ保存する', async () => {
+    window.localStorage.clear();
+    const user = userEvent.setup();
+    renderApp(<YoutubeMusicPlayerApp />);
+
+    await user.click(screen.getByRole('tab', { name: '端末プリセット' }));
+    await user.selectOptions(screen.getByRole('combobox'), 'pixel-10-pro-xl');
+    await user.click(screen.getByRole('button', { name: '画像として保存' }));
+    await waitFor(() => expect(download).toHaveBeenCalledOnce());
+
+    expect(captureSnap).toHaveBeenCalledWith(expect.any(HTMLElement), expect.objectContaining({
+      width: 1344,
+      height: 2992,
+      dpr: 3,
+    }));
+    const [target] = captureSnap.mock.calls[0] as [HTMLElement, Record<string, unknown>];
+    expect(target.style.width).toBe('448px');
+    expect(target.style.height).toBe('997px');
+    expect(target).toHaveAttribute('aria-hidden', 'true');
   });
 });
 

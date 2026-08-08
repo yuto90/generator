@@ -8,6 +8,7 @@ function Probe() {
     <div>
       <output data-testid="mode">{preview.settings.mode}</output>
       <output data-testid="size">{preview.outputSize.width}x{preview.outputSize.height}</output>
+      <output data-testid="capture-size">{preview.captureSize.width}x{preview.captureSize.height}@{preview.captureSize.dpr}</output>
       <output data-testid="valid">{String(preview.valid)}</output>
       <button type="button" onClick={() => preview.setMode('preset')}>プリセット</button>
       <button type="button" onClick={() => preview.setCustom({ width: '320', height: '568' })}>カスタム</button>
@@ -77,6 +78,19 @@ describe('DevicePreviewProvider', () => {
     render(<DevicePreviewProvider><Probe /></DevicePreviewProvider>);
     expect(screen.getByTestId('mode')).toHaveTextContent('device');
     expect(JSON.parse(window.localStorage.getItem('generator-device-preview') ?? '{}')).toMatchObject({ mode: 'device' });
+  });
+
+  test('既存Pixel 9 Pro XL設定を維持し、保存物理解像度だけを高密度化する', () => {
+    window.localStorage.setItem('generator-device-preview', JSON.stringify({
+      mode: 'preset',
+      presetId: 'pixel-9-pro-xl',
+      custom: { width: '375', height: '667' },
+    }));
+    render(<DevicePreviewProvider><Probe /></DevicePreviewProvider>);
+    expect(screen.getByTestId('mode')).toHaveTextContent('preset');
+    expect(screen.getByTestId('size')).toHaveTextContent('448x997');
+    expect(screen.getByTestId('capture-size')).toHaveTextContent('1344x2992@3');
+    expect(JSON.parse(window.localStorage.getItem('generator-device-preview') ?? '{}')).toMatchObject({ mode: 'preset', presetId: 'pixel-9-pro-xl' });
   });
 
   test.each([

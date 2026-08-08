@@ -1,9 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   DEFAULT_DEVICE_PREVIEW_SETTINGS,
+  getDeviceCaptureSize,
   getEffectiveDeviceSize,
   readDevicePreviewSettings,
   type CustomDeviceSize,
+  type DeviceCaptureSize,
   type DevicePreviewMode,
   type DevicePreviewSettings,
   type DeviceSize,
@@ -15,6 +17,8 @@ interface DevicePreviewContextValue {
   settings: DevicePreviewSettings;
   viewport: DeviceSize;
   outputSize: DeviceSize;
+  /** 保存PNGの物理解像度。プレビューの論理サイズとは別に扱う。 */
+  captureSize: DeviceCaptureSize;
   adjusted: boolean;
   valid: boolean;
   customErrors: CustomSizeErrors;
@@ -95,10 +99,12 @@ export function DevicePreviewProvider({ children, storage }: DevicePreviewProvid
   }, []);
 
   const effective = useMemo(() => getEffectiveDeviceSize(settings, viewport), [settings, viewport]);
+  const capture = useMemo(() => getDeviceCaptureSize(settings, viewport), [settings, viewport]);
   const value = useMemo<DevicePreviewContextValue>(() => ({
     settings,
     viewport,
     outputSize: effective.size,
+    captureSize: capture.physical,
     adjusted: effective.adjusted,
     valid: effective.valid,
     customErrors: effective.errors,
@@ -107,7 +113,7 @@ export function DevicePreviewProvider({ children, storage }: DevicePreviewProvid
     setPreset,
     setCustom,
     setDisplayScale,
-  }), [displayScale, effective, settings, setCustom, setDisplayScale, setMode, setPreset, viewport]);
+  }), [capture.physical, displayScale, effective, settings, setCustom, setDisplayScale, setMode, setPreset, viewport]);
 
   return <DevicePreviewContext.Provider value={value}>{children}</DevicePreviewContext.Provider>;
 }
