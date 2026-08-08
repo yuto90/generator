@@ -61,7 +61,8 @@ describe('device preview size logic', () => {
     expect(result.physical).toEqual({ width: 1344, height: 2992, dpr: 3 });
 
     const pixel10 = getDeviceCaptureSize({ mode: 'preset', presetId: 'pixel-10', custom: { width: '320', height: '568' } }, { width: 390, height: 844 });
-    expect(pixel10.physical).toEqual({ width: 1082, height: 2426, dpr: 2.625 });
+    expect(pixel10.layout).toEqual({ width: 412, height: 924 });
+    expect(pixel10.physical).toEqual({ width: 412, height: 924, dpr: 1 });
     const custom = getDeviceCaptureSize({ mode: 'custom', presetId: 'pixel-10-pro-xl', custom: { width: '320', height: '568' } }, { width: 390, height: 844 });
     expect(custom.physical).toEqual({ width: 320, height: 568, dpr: 1 });
   });

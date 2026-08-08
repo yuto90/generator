@@ -49,7 +49,7 @@ export const DEVICE_PRESETS: readonly DevicePreset[] = [
   { id: 'iphone-se', label: 'iPhone SE', width: 375, height: 667 },
   { id: 'iphone-16-pro', label: 'iPhone 16 Pro', width: 402, height: 874 },
   { id: 'iphone-16-pro-max', label: 'iPhone 16 Pro Max', width: 440, height: 956 },
-  { id: 'pixel-10', label: 'Pixel 10', width: 412, height: 924, dpr: 2.625 },
+  { id: 'pixel-10', label: 'Pixel 10', width: 412, height: 924 },
   { id: 'pixel-9-pro-xl', label: 'Pixel 9 Pro XL', width: 448, height: 997, dpr: 3, physicalSize: { width: 1344, height: 2992 } },
   { id: 'pixel-10-pro-xl', label: 'Pixel 10 Pro XL', width: 448, height: 997, dpr: 3, physicalSize: { width: 1344, height: 2992 } },
   { id: 'ipad-mini', label: 'iPad Mini', width: 768, height: 1024 },
