@@ -15,6 +15,8 @@ import InstagramReelApp from './instagram_reel/InstagramReelApp';
 const captureSnap = vi.hoisted(() => vi.fn());
 const download = vi.hoisted(() => vi.fn<() => Promise<void>>());
 const youtubeMusicCss = readFileSync('src/apps/youtube_music_player/youtube-music-player.css', 'utf8');
+const appleMusicCss = readFileSync('src/apps/apple_music_player/apple-music-player.css', 'utf8');
+const spotifyCss = readFileSync('src/apps/spotify_player/spotify-player.css', 'utf8');
 
 vi.mock('@zumer/snapdom', () => ({
   snapdom: captureSnap,
@@ -69,6 +71,20 @@ describe('SpotifyPlayerApp', () => {
     expect(document.getElementById('song-title')).toHaveTextContent('テスト曲');
     expect(document.getElementById('time-current')).toHaveTextContent('1:00');
   });
+
+  test('Android版Now Playingの全面表示と操作を描画する', () => {
+    renderApp(<SpotifyPlayerApp />);
+
+    expect(document.querySelector('.spotify-backdrop')).toBeInTheDocument();
+    expect(document.querySelector('.spotify-artwork-stage')).toBeInTheDocument();
+    expect(screen.getByText('プレイリストから再生中')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'その他' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'ライブラリに保存' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '再生デバイス' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'キュー' })).toBeInTheDocument();
+    expect(screen.getByLabelText('音量')).toBeInTheDocument();
+    expect(spotifyCss).toMatch(/\.device-canvas__content > \.spotify-card\s*\{[^}]*border-radius:\s*0/s);
+  });
 });
 
 describe('AppleMusicPlayerApp', () => {
@@ -79,6 +95,21 @@ describe('AppleMusicPlayerApp', () => {
     expect(bgPicker.value).toBe('#8e3b52');
     expect(document.getElementById('copyright-text')).toHaveTextContent('ⓒ 出典');
     expect(screen.getByRole('button', { name: 'トリミングを調整' })).toBeDisabled();
+  });
+
+  test('Android版Now Playingの全面表示と操作を描画する', () => {
+    renderApp(<AppleMusicPlayerApp />);
+
+    expect(document.querySelector('.am-artwork-stage')).toBeInTheDocument();
+    expect(document.querySelector('.am-player-panel')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'お気に入り' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'その他' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Chromecast' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '次に再生' })).toBeInTheDocument();
+    expect(screen.getByLabelText('音量')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'AirPlay' })).not.toBeInTheDocument();
+    expect(appleMusicCss).toContain('.am-card {');
+    expect(appleMusicCss).toMatch(/\.device-canvas__content > \.am-card\s*\{[^}]*border-radius:\s*0/s);
   });
 });
 

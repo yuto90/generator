@@ -202,24 +202,30 @@ function AppleMusicPlayerContent() {
             <DeviceCanvas>
               <div className="am-card" id="player-card" ref={cardRef} style={cardStyle}>
 
-            <div className="am-grabber" />
-
-            {/* Cover art */}
-            <div className="am-artwork-wrap">
-              <div
-                id="cover-img"
-                className={playing ? 'am-artwork playing' : 'am-artwork'}
-                style={getEditableImageStyle(applied.cover)}
-              />
-            </div>
+            <div
+              id="cover-img"
+              className={playing ? 'am-artwork-stage playing' : 'am-artwork-stage'}
+              style={getEditableImageStyle(applied.cover)}
+            />
+            <div className="am-artwork-shade" aria-hidden="true" />
+            <div className="am-screen-content">
+            <div className="am-grabber" aria-hidden="true" />
+            <section className="am-player-panel" aria-label="再生中の曲">
 
             {/* Song info */}
-            <div className="flex items-center gap-3 mb-3">
-              <div className="flex-1 min-w-0">
+            <div className="am-track-row">
+              <div className="am-track-copy">
                 <div className="am-title" id="song-title">{applied.title}</div>
                 <div className="am-artist" id="song-artist">{applied.artist}</div>
               </div>
-              <button className="am-more-btn" type="button" aria-label="その他">…</button>
+              <div className="am-track-actions">
+                <button className="am-icon-button am-favorite-button" type="button" aria-label="お気に入り">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.7 3.8 12.5a5.2 5.2 0 0 1 7.35-7.36L12 6l.85-.86a5.2 5.2 0 0 1 7.35 7.36L12 20.7z" /></svg>
+                </button>
+                <button className="am-icon-button" type="button" aria-label="その他">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="12" cy="19" r="1.7" /></svg>
+                </button>
+              </div>
             </div>
 
             {/* Progress slider */}
@@ -265,37 +271,13 @@ function AppleMusicPlayerContent() {
               </button>
             </div>
 
-            {/* Volume */}
-            <div className="flex items-center gap-2.5">
-              <span className="ctrl-btn w-4 h-4 shrink-0 opacity-60">
-                <svg viewBox="0 0 24 24"><path d="M13 4.6v14.8c0 .7-.83 1.07-1.35.6L7.2 16H4.5A1.5 1.5 0 0 1 3 14.5v-5A1.5 1.5 0 0 1 4.5 8h2.7l4.45-4c.52-.47 1.35-.1 1.35.6z" /></svg>
-              </span>
-              <div className="slider-wrap thin flex-1">
-                <div className="slider-track" />
-                <div className="slider-fill" id="volume-fill" style={{ width: `${volume}%` }} />
-                <input
-                  className="slider-input"
-                  type="range"
-                  id="volume-slider"
-                  value={volume}
-                  min="0"
-                  max="100"
-                  onChange={handleVolumeInput}
-                  aria-label="音量"
-                />
-              </div>
-              <span className="ctrl-btn w-4 h-4 shrink-0 opacity-60">
-                <svg viewBox="0 0 24 24"><path d="M10 4.6v14.8c0 .7-.83 1.07-1.35.6L4.2 16H1.5A1.5 1.5 0 0 1 0 14.5v-5A1.5 1.5 0 0 1 1.5 8h2.7l4.45-4c.52-.47 1.35-.1 1.35.6z" /><path d="M14.5 8.2a.9.9 0 0 1 1.27.1 5.6 5.6 0 0 1 0 7.4.9.9 0 0 1-1.36-1.18 3.8 3.8 0 0 0 0-5.04.9.9 0 0 1 .09-1.28z" /><path d="M17.8 5.3a.9.9 0 0 1 1.27.08 10 10 0 0 1 0 13.24.9.9 0 0 1-1.35-1.19 8.2 8.2 0 0 0 0-10.86.9.9 0 0 1 .08-1.27z" /></svg>
-              </span>
-            </div>
-
             {/* Bottom icons (lyrics / AirPlay / queue) */}
             <div className="am-bottom-icons">
               <button className="ctrl-btn" type="button" aria-label="歌詞">
                 <svg viewBox="0 0 24 24"><path d="M12 3C6.5 3 2 6.9 2 11.7c0 2.7 1.4 5.1 3.7 6.7-.2 1-.7 2-1.5 2.8-.3.3 0 .8.4.8 1.9-.2 3.5-1 4.6-1.9.9.2 1.9.4 2.8.4 5.5 0 10-3.9 10-8.8S17.5 3 12 3zm-4.5 9.9a1.3 1.3 0 1 1 0-2.6 1.3 1.3 0 0 1 0 2.6zm4.5 0a1.3 1.3 0 1 1 0-2.6 1.3 1.3 0 0 1 0 2.6zm4.5 0a1.3 1.3 0 1 1 0-2.6 1.3 1.3 0 0 1 0 2.6z" /></svg>
               </button>
-              <button className="ctrl-btn" type="button" aria-label="AirPlay">
-                <svg viewBox="0 0 24 24"><path d="M4.5 4h15A2.5 2.5 0 0 1 22 6.5v8a2.5 2.5 0 0 1-2.5 2.5h-2.2l-1.7-2h3.9a.5.5 0 0 0 .5-.5v-8a.5.5 0 0 0-.5-.5h-15a.5.5 0 0 0-.5.5v8c0 .28.22.5.5.5h3.9l-1.7 2H4.5A2.5 2.5 0 0 1 2 14.5v-8A2.5 2.5 0 0 1 4.5 4z" /><path d="M11.4 14.7a.8.8 0 0 1 1.2 0l4.8 5.6c.45.52.08 1.32-.6 1.32H7.2c-.68 0-1.05-.8-.6-1.32l4.8-5.6z" /></svg>
+              <button className="ctrl-btn" type="button" aria-label="Chromecast">
+                <svg viewBox="0 0 24 24"><path d="M4.5 4h15A2.5 2.5 0 0 1 22 6.5v8a2.5 2.5 0 0 1-2.5 2.5h-2.2l-1.7-2h3.9a.5.5 0 0 0 .5-.5v-8a.5.5 0 0 0-.5-.5h-15a.5.5 0 0 0-.5.5v2h-2v-2A2.5 2.5 0 0 1 4.5 4z" /><path d="M2 15.5a1 1 0 1 0 0 2 1 1 0 0 0 0-2zm0 3.5a1 1 0 1 0 0 2 1 1 0 0 0 0-2zm0-7a1 1 0 1 0 0 2 1 1 0 0 0-1 0zM6.5 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2z" /></svg>
               </button>
               <button className="ctrl-btn" type="button" aria-label="次に再生">
                 <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="2.2" rx="1.1" /><rect x="3" y="11" width="11" height="2.2" rx="1.1" /><rect x="3" y="17" width="11" height="2.2" rx="1.1" /><path d="M17.5 12.3v7.1c0 .5.55.8.97.53l3.1-2c.4-.26.4-.86 0-1.12l-3.1-2c-.42-.27-.97.02-.97.5z" transform="translate(0 -3.2)" /></svg>
@@ -304,6 +286,9 @@ function AppleMusicPlayerContent() {
 
             {/* Copyright */}
             <div className="am-copyright" id="copyright-text">{applied.copyright}</div>
+
+            </section>
+            </div>
 
               </div>
             </DeviceCanvas>
@@ -340,6 +325,19 @@ function AppleMusicPlayerContent() {
               <label className="field-label" htmlFor="in-youtube">YouTube URL</label>
               <input className="field-input" type="text" id="in-youtube" placeholder="例: https://www.youtube.com/watch?v=w2-uvGZCe3g" value={youtube} onChange={e => setYoutube(e.target.value)} />
               <p className="help-text text-[11px] mt-1.5">動画の URL を貼り付けてください</p>
+            </div>
+            <div>
+              <label className="field-label" htmlFor="in-volume">音量</label>
+              <input
+                className="editor-range"
+                id="in-volume"
+                type="range"
+                min="0"
+                max="100"
+                value={volume}
+                onChange={handleVolumeInput}
+                aria-label="音量"
+              />
             </div>
             <div>
               <label className="field-label" htmlFor="in-copyright">Copyright</label>

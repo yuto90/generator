@@ -370,3 +370,173 @@
   }
   .app-apple .am-artwork { width: 100%; height: 100%; }
 }
+
+/* Android Now Playing: 端末キャンバス全体を保存対象として使う。 */
+.app-apple .device-canvas__content > .am-card {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.app-apple .am-card {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: hidden;
+  container-type: size;
+  isolation: isolate;
+}
+.app-apple .am-artwork-stage {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  transform: none;
+  transition: filter 0.45s;
+}
+.app-apple .am-artwork-stage.playing { filter: saturate(1.04); }
+.app-apple .am-artwork-shade {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.08) 0%, transparent 34%, rgba(0, 0, 0, 0.34) 62%, rgba(0, 0, 0, 0.88) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.22), transparent 28%);
+}
+.app-apple .am-screen-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+  padding: clamp(12px, 3cqh, 28px) clamp(16px, 5cqw, 42px) clamp(14px, 2.8cqh, 28px);
+}
+.app-apple .am-grabber {
+  flex: 0 0 auto;
+  width: clamp(34px, 9cqw, 52px);
+  height: clamp(4px, 0.65cqh, 6px);
+  margin: 0 auto;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.55;
+}
+.app-apple .am-player-panel {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 620px);
+  min-height: 0;
+  margin: auto auto 0;
+}
+.app-apple .am-track-row {
+  display: flex;
+  align-items: flex-end;
+  gap: clamp(10px, 3cqw, 20px);
+  min-width: 0;
+  margin-top: clamp(12px, 2.3cqh, 24px);
+}
+.app-apple .am-track-copy { flex: 1; min-width: 0; }
+.app-apple .am-title {
+  font-size: clamp(17px, 4.4cqw, 30px);
+  font-weight: 760;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-apple .am-artist {
+  margin-top: 4px;
+  font-size: clamp(13px, 3.2cqw, 20px);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.72;
+}
+.app-apple .am-track-actions { display: flex; align-items: center; gap: clamp(6px, 2cqw, 14px); }
+.app-apple .am-icon-button {
+  display: grid;
+  place-items: center;
+  width: clamp(30px, 8.5cqw, 46px);
+  height: clamp(30px, 8.5cqw, 46px);
+  padding: 0;
+  color: inherit;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+  cursor: pointer;
+}
+.app-apple .am-icon-button:hover { background: rgba(255, 255, 255, 0.26); }
+.app-apple .am-icon-button:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+.app-apple .am-icon-button svg { width: 48%; height: 48%; fill: currentColor; }
+.app-apple .am-favorite-button { background: transparent; border-color: transparent; }
+.app-apple .am-progress-group { margin-top: clamp(16px, 3.2cqh, 30px); }
+.app-apple .slider-wrap { height: clamp(18px, 2.8cqh, 24px); }
+.app-apple .slider-track,
+.app-apple .slider-fill { height: clamp(4px, 0.6cqh, 7px); border-radius: 999px; }
+.app-apple .am-times {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+  font-size: clamp(9px, 2.3cqw, 14px);
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
+}
+.app-apple #time-remaining { text-align: right; }
+.app-apple .am-format-badge { text-align: center; font-size: 0.82em; letter-spacing: 0.04em; opacity: 0.72; }
+.app-apple .am-transport {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 430px;
+  width: min(100%, 430px);
+  margin: clamp(15px, 3cqh, 28px) auto clamp(8px, 1.8cqh, 18px);
+}
+.app-apple .am-skip-button { width: clamp(30px, 8cqw, 48px); height: clamp(30px, 8cqw, 48px); }
+.app-apple .am-play-button {
+  width: clamp(50px, 14cqw, 74px);
+  height: clamp(50px, 14cqw, 74px);
+  padding: clamp(12px, 3.1cqw, 18px);
+  border-radius: 50%;
+  color: var(--player-point, #fff);
+  background: currentColor;
+  box-sizing: border-box;
+}
+.app-apple .am-play-button svg { color: var(--player-text, #222); fill: currentColor; }
+.app-apple .am-bottom-icons {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 320px;
+  width: min(100%, 320px);
+  margin: clamp(8px, 1.8cqh, 18px) auto 0;
+  opacity: 0.86;
+}
+.app-apple .am-bottom-icons .ctrl-btn { width: clamp(22px, 6cqw, 34px); height: clamp(22px, 6cqw, 34px); }
+.app-apple .am-copyright {
+  margin-top: clamp(8px, 1.6cqh, 16px);
+  text-align: center;
+  font-size: clamp(8px, 1.8cqw, 11px);
+  line-height: 1.2;
+  letter-spacing: 0.03em;
+  opacity: 0.55;
+}
+.app-apple .editor-range {
+  display: block;
+  width: 100%;
+  accent-color: var(--gen-accent);
+  cursor: pointer;
+}
