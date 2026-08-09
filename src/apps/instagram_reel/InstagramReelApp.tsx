@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { useCapture } from '../../shared/capture/useCapture';
+import { DeviceCanvas, DevicePreviewProvider, DeviceToolbar, useDevicePreview } from '../../shared/device-preview';
 import ImageCropField from '../../shared/image-crop/ImageCropField';
 import { createEditableImage, getEditableImageStyle, type EditableImage } from '../../shared/image-crop/image-crop';
 import { ThemeToggle } from '../../shared/theme/ThemeToggle';
@@ -51,7 +52,9 @@ const DEFAULT_CONTENT: ReelContent = {
   avatar: createEditableImage(DEFAULT_AVATAR),
 };
 
-export default function InstagramReelApp() {
+function InstagramReelContent() {
+  const { outputSize, captureSize, valid } = useDevicePreview();
+
   const [username, setUsername] = useState('');
   const [caption, setCaption] = useState('');
   const [audio, setAudio] = useState('');
@@ -81,7 +84,8 @@ export default function InstagramReelApp() {
   }
 
   function handleCapture() {
-    capture(cardRef.current, 'instagram_reel.png').catch((error: unknown) => {
+    if (!valid) return;
+    capture(cardRef.current, 'instagram_reel.png', outputSize, captureSize).catch((error: unknown) => {
       const message = error instanceof Error ? error.message : String(error);
       alert(message);
     });
@@ -89,11 +93,14 @@ export default function InstagramReelApp() {
 
   return (
     <div className="app-instagram">
-      <div className="maker-layout relative flex min-h-screen w-full max-w-[1500px] mx-auto items-center justify-center pr-[340px] max-md:flex-col max-md:px-4 max-md:py-6 max-md:gap-4 max-md:min-h-0 max-md:justify-start">
+      <div className="maker-layout relative flex min-h-screen w-full max-w-[1500px] mx-auto items-center justify-center pr-[340px] max-md:flex-col max-md:px-4 max-md:py-6 max-md:gap-4 max-md:min-h-0 max-md:justify-start" data-device-preview-stage>
 
         {/* ---- Center: Instagram Reel preview ---- */}
-        <div id="capture-area" className="flex w-full justify-center max-md:w-auto">
-          <div className="reel-card" id="reel-card" ref={cardRef}>
+        <div id="capture-area" className="device-preview-slot flex w-full justify-center max-md:w-auto" data-device-preview-slot>
+          <div className="device-preview-stack">
+            <DeviceToolbar />
+            <DeviceCanvas>
+              <div className="reel-card" id="reel-card" ref={cardRef}>
 
             <div className="reel-bg" id="reel-bg" style={getEditableImageStyle(applied.bg)} />
             <div className="reel-scrim-top" />
@@ -153,6 +160,8 @@ export default function InstagramReelApp() {
               </div>
             </div>
 
+              </div>
+            </DeviceCanvas>
           </div>
         </div>
 
@@ -214,7 +223,7 @@ export default function InstagramReelApp() {
 
           <div className="flex flex-col gap-2.5">
             <button className="btn-primary btn-apply" id="btn-update" type="button" onClick={applyPreview}>適用してプレビュー</button>
-            <button className="btn-primary btn-save" id="btn-capture" type="button" onClick={handleCapture} disabled={capturing}>
+            <button className="btn-primary btn-save" id="btn-capture" type="button" onClick={handleCapture} disabled={capturing || !valid}>
               {capturing ? '画像を生成中…' : '画像として保存'}
             </button>
           </div>
@@ -223,4 +232,8 @@ export default function InstagramReelApp() {
       </div>
     </div>
   );
+}
+
+export default function InstagramReelApp() {
+  return <DevicePreviewProvider><InstagramReelContent /></DevicePreviewProvider>;
 }

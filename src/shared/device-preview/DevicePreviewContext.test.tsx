@@ -1,0 +1,106 @@
+import { act, render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, test } from 'vitest';
+import { DevicePreviewProvider, useDevicePreview } from './DevicePreviewContext';
+
+function Probe() {
+  const preview = useDevicePreview();
+  return (
+    <div>
+      <output data-testid="mode">{preview.settings.mode}</output>
+      <output data-testid="size">{preview.outputSize.width}x{preview.outputSize.height}</output>
+      <output data-testid="capture-size">{preview.captureSize.width}x{preview.captureSize.height}@{preview.captureSize.dpr}</output>
+      <output data-testid="valid">{String(preview.valid)}</output>
+      <button type="button" onClick={() => preview.setMode('preset')}>プリセット</button>
+      <button type="button" onClick={() => preview.setCustom({ width: '320', height: '568' })}>カスタム</button>
+    </div>
+  );
+}
+
+describe('DevicePreviewProvider', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 844 });
+  });
+
+  test('初期値はこの端末でviewport変更へ追従する', () => {
+    render(<DevicePreviewProvider><Probe /></DevicePreviewProvider>);
+    expect(screen.getByTestId('mode')).toHaveTextContent('device');
+    expect(screen.getByTestId('size')).toHaveTextContent('390x844');
+    act(() => {
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: 844 });
+      Object.defineProperty(window, 'innerHeight', { configurable: true, value: 390 });
+      window.dispatchEvent(new Event('resize'));
+    });
+    expect(screen.getByTestId('size')).toHaveTextContent('390x844');
+  });
+
+  test('visualViewportだけのresizeでは保存サイズを変えない', () => {
+    const originalDescriptor = Object.getOwnPropertyDescriptor(window, 'visualViewport');
+    const visualViewport = Object.assign(new EventTarget(), { width: 300, height: 600 }) as unknown as VisualViewport;
+    Object.defineProperty(window, 'visualViewport', { configurable: true, value: visualViewport });
+    try {
+      render(<DevicePreviewProvider><Probe /></DevicePreviewProvider>);
+      expect(screen.getByTestId('size')).toHaveTextContent('390x844');
+
+      act(() => {
+        Object.assign(visualViewport, { width: 320, height: 640 });
+        visualViewport.dispatchEvent(new Event('resize'));
+      });
+      expect(screen.getByTestId('size')).toHaveTextContent('390x844');
+    } finally {
+      if (originalDescriptor) {
+        Object.defineProperty(window, 'visualViewport', originalDescriptor);
+      } else {
+        Reflect.deleteProperty(window, 'visualViewport');
+      }
+    }
+  });
+
+  test('モードとカスタムサイズを共有localStorageへ保存・復元する', () => {
+    const first = render(<DevicePreviewProvider><Probe /></DevicePreviewProvider>);
+    act(() => screen.getByRole('button', { name: 'カスタム' }).click());
+    expect(screen.getByTestId('size')).toHaveTextContent('320x568');
+    first.unmount();
+    render(<DevicePreviewProvider><Probe /></DevicePreviewProvider>);
+    expect(screen.getByTestId('mode')).toHaveTextContent('custom');
+    expect(screen.getByTestId('size')).toHaveTextContent('320x568');
+  });
+
+  test('不正なカスタム入力ではvalid=falseとなる', () => {
+    render(<DevicePreviewProvider><Probe /></DevicePreviewProvider>);
+    act(() => screen.getByRole('button', { name: 'プリセット' }).click());
+    expect(screen.getByTestId('valid')).toHaveTextContent('true');
+  });
+
+  test('壊れたlocalStorage値は初期値へ復旧して保存し直す', () => {
+    window.localStorage.setItem('generator-device-preview', '{broken');
+    render(<DevicePreviewProvider><Probe /></DevicePreviewProvider>);
+    expect(screen.getByTestId('mode')).toHaveTextContent('device');
+    expect(JSON.parse(window.localStorage.getItem('generator-device-preview') ?? '{}')).toMatchObject({ mode: 'device' });
+  });
+
+  test('既存Pixel 9 Pro XL設定を維持し、保存物理解像度だけを高密度化する', () => {
+    window.localStorage.setItem('generator-device-preview', JSON.stringify({
+      mode: 'preset',
+      presetId: 'pixel-9-pro-xl',
+      custom: { width: '375', height: '667' },
+    }));
+    render(<DevicePreviewProvider><Probe /></DevicePreviewProvider>);
+    expect(screen.getByTestId('mode')).toHaveTextContent('preset');
+    expect(screen.getByTestId('size')).toHaveTextContent('448x997');
+    expect(screen.getByTestId('capture-size')).toHaveTextContent('1344x2992@3');
+    expect(JSON.parse(window.localStorage.getItem('generator-device-preview') ?? '{}')).toMatchObject({ mode: 'preset', presetId: 'pixel-9-pro-xl' });
+  });
+
+  test.each([
+    ['未対応presetId', { mode: 'preset', presetId: 'retired-device', custom: { width: '320', height: '568' } }],
+    ['欠落presetId', { mode: 'preset', custom: { width: '320', height: '568' } }],
+  ])('localStorageの%sをこの端末へ復旧して保存し直す', (_label, value) => {
+    window.localStorage.setItem('generator-device-preview', JSON.stringify(value));
+    render(<DevicePreviewProvider><Probe /></DevicePreviewProvider>);
+    expect(screen.getByTestId('mode')).toHaveTextContent('device');
+    expect(screen.getByTestId('size')).toHaveTextContent('390x844');
+    expect(JSON.parse(window.localStorage.getItem('generator-device-preview') ?? '{}')).toMatchObject({ mode: 'device', presetId: 'iphone-se' });
+  });
+});
