@@ -74,6 +74,28 @@ describe('useCapture', () => {
     appRoot.remove();
   });
 
+  test('保存用複製はaria-hiddenに加えてinertで操作対象から除外する', async () => {
+    const appRoot = document.createElement('div');
+    appRoot.className = 'app-test';
+    const element = document.createElement('div');
+    appRoot.append(element);
+    document.body.append(appRoot);
+    captureSnap.mockImplementation(async (captureTarget: Element) => {
+      expect(captureTarget).toHaveAttribute('aria-hidden', 'true');
+      expect((captureTarget as HTMLElement).inert).toBe(true);
+      return { toCanvas: warmUp, download };
+    });
+    const { result } = renderHook(() => useCapture());
+
+    await act(async () => {
+      await result.current.capture(element, 'player.png', { width: 375, height: 667 });
+    });
+
+    expect(captureSnap).toHaveBeenCalledOnce();
+    expect(appRoot.children).toHaveLength(1);
+    appRoot.remove();
+  });
+
   test('論理レイアウトを維持したままPixel XLの物理解像度へ保存する', async () => {
     const appRoot = document.createElement('div');
     appRoot.className = 'app-test';

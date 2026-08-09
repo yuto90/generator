@@ -303,8 +303,8 @@ function SpotifyPlayerContent() {
                 <div className="track-title" id="song-title">{applied.title}</div>
                 <div className="track-artist" id="song-artist">{applied.artist}</div>
               </div>
-              <button className="icon-button heart-button" type="button" aria-label="ライブラリに保存">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.8 4.2 13a5.2 5.2 0 0 1 7.35-7.35L12 6.1l.45-.45A5.2 5.2 0 0 1 19.8 13L12 20.8z" fill="none" stroke="currentColor" strokeWidth="1.8" /><path d="M12 9v6m-3-3h6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
+              <button className="icon-button heart-button library-button" type="button" aria-label="ライブラリに保存" data-glyph="plus">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.25" fill="none" stroke="currentColor" strokeWidth="1.7" /><path d="M12 8v8m-4-4h8" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" /></svg>
               </button>
             </div>
 

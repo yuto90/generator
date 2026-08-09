@@ -56,6 +56,7 @@ function createCaptureTarget(element: HTMLElement, size: DeviceSize) {
     transformOrigin: 'top left',
   });
   captureTarget.setAttribute('aria-hidden', 'true');
+  captureTarget.inert = true;
   appRoot.append(captureTarget);
 
   // SnapDOMはno-repeatのCSS背景を出力サイズに合わせて事前圧縮する。

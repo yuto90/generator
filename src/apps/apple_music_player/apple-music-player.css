@@ -178,6 +178,13 @@
   background: rgba(255, 255, 255, 0.68); border-color: rgba(70, 25, 38, 0.13); color: rgba(48, 36, 39, 0.75);
 }
 :root[data-theme='light'] .app-apple .btn-save:hover { background: #fff; color: #302427; }
+
+/* ライトテーマでは暗いアートワークシェードを明るくし、pickerの文字色を保つ。 */
+:root[data-theme='light'] .app-apple .am-artwork-shade {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, transparent 34%, rgba(255, 255, 255, 0.12) 62%, rgba(255, 255, 255, 0.22) 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 28%);
+}
 :root[data-theme='light'] .app-apple .color-picker-wrap input[type='color'] {
   background: rgba(255, 255, 255, 0.8); border-color: rgba(70, 25, 38, 0.13);
 }

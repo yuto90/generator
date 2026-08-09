@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { ThemeProvider } from '../shared/theme/ThemeContext';
@@ -110,6 +110,49 @@ describe('AppleMusicPlayerApp', () => {
     expect(screen.queryByRole('button', { name: 'AirPlay' })).not.toBeInTheDocument();
     expect(appleMusicCss).toContain('.am-card {');
     expect(appleMusicCss).toMatch(/\.device-canvas__content > \.am-card\s*\{[^}]*border-radius:\s*0/s);
+  });
+});
+
+describe('Android Now PlayingのP2回帰契約', () => {
+  test('ライトテーマでも暗い背景上のNow Playing文字を高コントラストで保つ', async () => {
+    const user = userEvent.setup();
+    renderApp(<SpotifyPlayerApp />);
+    await user.click(screen.getByRole('button', { name: 'ライトモードに切り替える' }));
+
+    await waitFor(() => expect(document.documentElement).toHaveAttribute('data-theme', 'light'));
+    expect(document.querySelector('.spotify-backdrop-shade')).toBeInTheDocument();
+    expect(spotifyCss).toMatch(/:root\[data-theme='light'\]\s+\.app-spotify\s+\.spotify-card\s*\{[^}]*--card-text:\s*#ffffff;[^}]*--card-muted:\s*rgba\(255,\s*255,\s*255,\s*0\.72\);/s);
+
+    cleanup();
+    window.localStorage.clear();
+    delete document.documentElement.dataset.theme;
+    renderApp(<AppleMusicPlayerApp />);
+    await user.click(screen.getByRole('button', { name: 'ライトモードに切り替える' }));
+
+    await waitFor(() => expect(document.documentElement).toHaveAttribute('data-theme', 'light'));
+    expect(document.querySelector('.am-artwork-shade')).toBeInTheDocument();
+    expect(appleMusicCss).toMatch(/:root\[data-theme='light'\]\s+\.app-apple\s+\.am-artwork-shade\s*\{[^}]*rgba\(255,\s*255,\s*255,/s);
+  });
+
+  test('Apple Now Playingの進捗時刻にDolby Atmosを中央表示する', () => {
+    renderApp(<AppleMusicPlayerApp />);
+
+    const times = document.querySelector('.am-times');
+    expect(times).toBeInTheDocument();
+    expect(times?.children).toHaveLength(3);
+    expect(times?.children[0]).toHaveAttribute('id', 'time-current');
+    expect(times?.children[1]).toHaveClass('am-format-badge');
+    expect(times?.children[1]).toHaveTextContent('Dolby Atmos');
+    expect(times?.children[2]).toHaveAttribute('id', 'time-remaining');
+  });
+
+  test('AppleとSpotifyのNow Playing保存アイコンは意図したglyph契約を持つ', () => {
+    renderApp(<AppleMusicPlayerApp />);
+    expect(screen.getByRole('button', { name: 'お気に入り' })).toHaveAttribute('data-glyph', 'star');
+
+    cleanup();
+    renderApp(<SpotifyPlayerApp />);
+    expect(screen.getByRole('button', { name: 'ライブラリに保存' })).toHaveAttribute('data-glyph', 'plus');
   });
 });
 

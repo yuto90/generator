@@ -219,8 +219,8 @@ function AppleMusicPlayerContent() {
                 <div className="am-artist" id="song-artist">{applied.artist}</div>
               </div>
               <div className="am-track-actions">
-                <button className="am-icon-button am-favorite-button" type="button" aria-label="お気に入り">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.7 3.8 12.5a5.2 5.2 0 0 1 7.35-7.36L12 6l.85-.86a5.2 5.2 0 0 1 7.35 7.36L12 20.7z" /></svg>
+                <button className="am-icon-button am-favorite-button" type="button" aria-label="お気に入り" data-glyph="star">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3z" /></svg>
                 </button>
                 <button className="am-icon-button" type="button" aria-label="その他">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="12" cy="19" r="1.7" /></svg>
@@ -245,6 +245,7 @@ function AppleMusicPlayerContent() {
             </div>
             <div className="am-times">
               <span id="time-current">{amFormatTime(times.current)}</span>
+              <span className="am-format-badge">Dolby Atmos</span>
               <span id="time-remaining">
                 {times.duration > 0 ? `-${amFormatTime(times.duration - times.current)}` : '-:--'}
               </span>

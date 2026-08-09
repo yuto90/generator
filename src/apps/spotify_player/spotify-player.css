@@ -86,6 +86,12 @@
 
 
 :root[data-theme='light'] .app-spotify .spotify-card {
+  --card-bg-top: #1d2420;
+  --card-bg-bottom: #101310;
+  --card-text: #ffffff;
+  --card-muted: rgba(255, 255, 255, 0.72);
+  --card-track: rgba(255, 255, 255, 0.3);
+  --card-shadow: rgba(0, 0, 0, 0.52);
   border-color: rgba(25, 20, 20, 0.08);
 }
 
