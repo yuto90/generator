@@ -24,6 +24,4 @@ log "Repository: $repo_root"
 log "Python: $(python3 --version 2>&1)"
 log "Node: $(node --version 2>&1)"
 log "依存関係のインストールや静的サーバーの起動は行いません。"
-log "Claude Code / Codex のMCP設定を同期します。"
-node .agent-shared/scripts/sync-agent-mcp.mjs
 log "セットアップが完了しました。"

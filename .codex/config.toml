@@ -1,5 +1,3 @@
 personality = "friendly"
 
-# MCP server sections generated from .agent-shared/mcp/servers.json.
-# Edit the shared source, then run:
-# node .agent-shared/scripts/sync-agent-mcp.mjs
+# MCP 設定はこのファイルで管理します。秘密値は環境変数を参照してください。

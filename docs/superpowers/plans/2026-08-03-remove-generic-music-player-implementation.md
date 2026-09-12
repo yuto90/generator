@@ -147,7 +147,7 @@ git commit -m "feat: remove generic music player generator"
 **Files:**
 - Modify: `src/App.tsx:6`
 - Modify: `README.md:25`
-- Modify: `.agent-shared/skills/generator-project-guide/SKILL.md:24`
+- Modify: `.agents/skills/generator-project-guide/SKILL.md:24`
 - Add: `docs/superpowers/specs/2026-08-03-remove-generic-music-player-design.md`
 - Add: `docs/superpowers/plans/2026-08-03-remove-generic-music-player-implementation.md`
 
@@ -178,7 +178,7 @@ git commit -m "feat: remove generic music player generator"
 
 - [ ] **Step 3: プロジェクトskillのルート例を更新する**
 
-`.agent-shared/skills/generator-project-guide/SKILL.md`の起動説明を次へ置き換える。
+`.agents/skills/generator-project-guide/SKILL.md`の起動説明を次へ置き換える。
 
 ```markdown
 `http://localhost:5173/` でポータルを確認します。各アプリは `#/apple_music_player` のようなハッシュルートで開きます。
@@ -189,7 +189,7 @@ git commit -m "feat: remove generic music player generator"
 Run:
 
 ```bash
-rg --hidden -n "MusicPlayerApp|apps/music_player|id: 'music_player'|#/music_player" src README.md .agent-shared
+rg --hidden -n "MusicPlayerApp|apps/music_player|id: 'music_player'|#/music_player" src README.md .agents
 ```
 
 Expected: 出力なし。終了コード1は「一致なし」を表すため成功条件とする。過去の`docs/superpowers/`と`src/shared/youtube/`の由来コメントはこの検索対象・パターンで変更対象にしない。
@@ -233,7 +233,7 @@ Expected: クリーン起動した開発サーバーで次を確認できる。
 - [ ] **Step 8: ドキュメントと説明更新をコミットする**
 
 ```bash
-git add src/App.tsx README.md .agent-shared/skills/generator-project-guide/SKILL.md docs/superpowers/specs/2026-08-03-remove-generic-music-player-design.md docs/superpowers/plans/2026-08-03-remove-generic-music-player-implementation.md
+git add src/App.tsx README.md .agents/skills/generator-project-guide/SKILL.md docs/superpowers/specs/2026-08-03-remove-generic-music-player-design.md docs/superpowers/plans/2026-08-03-remove-generic-music-player-implementation.md
 git commit -m "docs: update references after music player removal"
 ```
 

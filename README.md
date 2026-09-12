@@ -42,4 +42,4 @@ npm test         # vitest run + node --test tests/*.test.js
 1. `src/apps/<app-name>/` にコンポーネントと CSS を追加します。
 2. `src/generators.tsx` のレジストリに登録すると、サイドバーとルーティングに反映されます。
 
-詳細は `.agent-shared/skills/generator-project-guide/SKILL.md` を参照してください。
+詳細は `.agents/skills/generator-project-guide/SKILL.md` を参照してください。
