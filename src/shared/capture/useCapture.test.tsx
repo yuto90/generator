@@ -28,7 +28,7 @@ describe('useCapture', () => {
     });
   });
 
-  test('Safariでも等倍ラスタライズされない4倍サイズの複製をPNGで保存する', async () => {
+  test('Safariでも指定実寸の非表示複製をscale:1/dpr:1でPNG保存する', async () => {
     const appRoot = document.createElement('div');
     appRoot.className = 'app-test';
     const element = document.createElement('div');
@@ -41,8 +41,11 @@ describe('useCapture', () => {
     captureSnap.mockImplementation(async (captureTarget: Element, options: Record<string, unknown>) => {
       expect(captureTarget).not.toBe(element);
       expect(captureTarget.parentElement).toBe(appRoot);
-      expect((captureTarget as HTMLElement).style.transform).toBe('scale(4)');
+      expect((captureTarget as HTMLElement).style.transform).toBe('none');
       expect((captureTarget as HTMLElement).style.transformOrigin).toBe('top left');
+      expect((captureTarget as HTMLElement).style.width).toBe('375px');
+      expect((captureTarget as HTMLElement).style.height).toBe('667px');
+      expect((captureTarget as HTMLElement).style.containerType).toBe('size');
       const captureArtwork = captureTarget.firstElementChild as HTMLElement;
       expect(captureArtwork.style.backgroundRepeat).toBe('no-repeat');
       expect(options).toEqual({
@@ -50,13 +53,15 @@ describe('useCapture', () => {
         filename: 'player.png',
         scale: 1,
         dpr: 1,
+        width: 375,
+        height: 667,
       });
       return { toCanvas: warmUp, download };
     });
     const { result } = renderHook(() => useCapture());
 
     await act(async () => {
-      await result.current.capture(element, 'player.png');
+      await result.current.capture(element, 'player.png', { width: 375, height: 667 });
     });
 
     expect(captureSnap).toHaveBeenCalledOnce();
@@ -66,6 +71,91 @@ describe('useCapture', () => {
     expect(appRoot.children).toHaveLength(1);
     expect(element.style.transform).toBe('');
     expect(result.current.capturing).toBe(false);
+    appRoot.remove();
+  });
+
+  test('保存用複製はaria-hiddenに加えてinertで操作対象から除外する', async () => {
+    const appRoot = document.createElement('div');
+    appRoot.className = 'app-test';
+    const element = document.createElement('div');
+    appRoot.append(element);
+    document.body.append(appRoot);
+    captureSnap.mockImplementation(async (captureTarget: Element) => {
+      expect(captureTarget).toHaveAttribute('aria-hidden', 'true');
+      expect((captureTarget as HTMLElement).inert).toBe(true);
+      return { toCanvas: warmUp, download };
+    });
+    const { result } = renderHook(() => useCapture());
+
+    await act(async () => {
+      await result.current.capture(element, 'player.png', { width: 375, height: 667 });
+    });
+
+    expect(captureSnap).toHaveBeenCalledOnce();
+    expect(appRoot.children).toHaveLength(1);
+    appRoot.remove();
+  });
+
+  test('論理レイアウトを維持したままPixel XLの物理解像度へ保存する', async () => {
+    const appRoot = document.createElement('div');
+    appRoot.className = 'app-test';
+    const element = document.createElement('div');
+    appRoot.append(element);
+    document.body.append(appRoot);
+    captureSnap.mockImplementation(async (captureTarget: Element, options: Record<string, unknown>) => {
+      expect((captureTarget as HTMLElement).style.width).toBe('448px');
+      expect((captureTarget as HTMLElement).style.height).toBe('997px');
+      expect(options).toEqual({
+        format: 'png',
+        filename: 'pixel-xl.png',
+        scale: 1,
+        dpr: 3,
+        width: 1344,
+        height: 2992,
+      });
+      return { toCanvas: warmUp, download };
+    });
+    const { result } = renderHook(() => useCapture());
+
+    await act(async () => {
+      await result.current.capture(
+        element,
+        'pixel-xl.png',
+        { width: 448, height: 997 },
+        { width: 1344, height: 2992, dpr: 3 },
+      );
+    });
+
+    expect(warmUp).toHaveBeenCalledWith({ width: 1344, height: 2992, dpr: 1 });
+    expect(download).toHaveBeenCalledOnce();
+    expect(appRoot.children).toHaveLength(1);
+    appRoot.remove();
+  });
+
+  test('保存用複製はカードの論理サイズ変数とsize container条件を引き継ぐ', async () => {
+    const appRoot = document.createElement('div');
+    appRoot.className = 'app-test';
+    const element = document.createElement('div');
+    element.id = 'player-card';
+    element.style.containerType = 'size';
+    element.style.setProperty('--device-preview-width', '568px');
+    element.style.setProperty('--device-preview-height', '568px');
+    appRoot.append(element);
+    document.body.append(appRoot);
+    captureSnap.mockImplementation(async (captureTarget: Element) => {
+      expect((captureTarget as HTMLElement).style.containerType).toBe('size');
+      expect((captureTarget as HTMLElement).style.getPropertyValue('--device-preview-width')).toBe('568px');
+      expect((captureTarget as HTMLElement).style.getPropertyValue('--device-preview-height')).toBe('568px');
+      return { toCanvas: warmUp, download };
+    });
+    const { result } = renderHook(() => useCapture());
+
+    await act(async () => {
+      await result.current.capture(element, 'player.png', { width: 568, height: 568 });
+    });
+
+    expect(captureSnap).toHaveBeenCalledOnce();
+    expect(appRoot.children).toHaveLength(1);
     appRoot.remove();
   });
 
@@ -97,6 +187,23 @@ describe('useCapture', () => {
     });
 
     expect(warmUp).not.toHaveBeenCalled();
+    expect(download).toHaveBeenCalledOnce();
+  });
+
+  test('保存中の二重実行は1回のSnapDOMとダウンロードに抑える', async () => {
+    let resolveDownload!: () => void;
+    download.mockReturnValue(new Promise<void>(resolve => { resolveDownload = resolve; }));
+    const { result } = renderHook(() => useCapture());
+    let first!: Promise<void | undefined>;
+    let second!: Promise<void | undefined>;
+    act(() => {
+      first = result.current.capture(document.createElement('div'), 'first.png', { width: 375, height: 667 });
+      second = result.current.capture(document.createElement('div'), 'second.png', { width: 375, height: 667 });
+    });
+    await waitFor(() => expect(result.current.capturing).toBe(true));
+    resolveDownload();
+    await act(async () => { await Promise.all([first, second]); });
+    expect(captureSnap).toHaveBeenCalledOnce();
     expect(download).toHaveBeenCalledOnce();
   });
 
@@ -138,5 +245,23 @@ describe('useCapture', () => {
       });
     });
     expect(result.current.capturing).toBe(false);
+  });
+
+  test('SnapDOM失敗時も保存用複製を後始末する', async () => {
+    const appRoot = document.createElement('div');
+    appRoot.className = 'app-test';
+    const element = document.createElement('div');
+    appRoot.append(element);
+    document.body.append(appRoot);
+    const originalError = new Error('renderer failed');
+    captureSnap.mockRejectedValueOnce(originalError);
+    const { result } = renderHook(() => useCapture());
+
+    await act(async () => {
+      await expect(result.current.capture(element, 'player.png', { width: 375, height: 667 })).rejects.toMatchObject({ cause: originalError });
+    });
+    expect(appRoot.children).toHaveLength(1);
+    expect(result.current.capturing).toBe(false);
+    appRoot.remove();
   });
 });

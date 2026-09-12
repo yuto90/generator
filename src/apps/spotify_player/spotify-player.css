@@ -66,6 +66,9 @@
   place-items: center;
   padding: 40px;
 }
+.app-spotify .device-preview-stack { display: flex; flex-direction: column; align-items: center; gap: 12px; width: min(100%, 760px); }
+.app-spotify .device-preview-slot { width: 100%; min-width: 0; min-height: 0; height: 100%; display: flex; align-items: center; justify-content: center; }
+.app-spotify .device-canvas { border-radius: 28px; }
 
 .app-spotify .spotify-card {
   width: 340px;
@@ -78,8 +81,17 @@
   box-shadow: 0 30px 75px var(--card-shadow);
   overflow: hidden;
 }
+.app-spotify .spotify-card { container-type: size; }
+.app-spotify .device-canvas__content > .spotify-card { width: 100%; height: 100%; max-width: none; border-radius: 28px; }
+
 
 :root[data-theme='light'] .app-spotify .spotify-card {
+  --card-bg-top: #1d2420;
+  --card-bg-bottom: #101310;
+  --card-text: #ffffff;
+  --card-muted: rgba(255, 255, 255, 0.72);
+  --card-track: rgba(255, 255, 255, 0.3);
+  --card-shadow: rgba(0, 0, 0, 0.52);
   border-color: rgba(25, 20, 20, 0.08);
 }
 
@@ -343,3 +355,171 @@
   .app-spotify .editor { min-height: auto; padding: 22px 18px 32px; border-top: 1px solid var(--gen-panel-border); border-left: 0; }
   .app-spotify .spotify-card { width: min(340px, calc(100vw - 32px)); }
 }
+
+/* 正方形に近い大型キャンバスでは、アートワークを縮小して下部操作を残す。 */
+@container (min-width: 1px) {
+  .app-spotify .artwork {
+    width: min(100%, max(0px, calc(var(--device-preview-width, 100cqw) - 44px)), max(0px, calc(var(--device-preview-height, 100cqh) - 342px)));
+    height: min(100%, max(0px, calc(var(--device-preview-width, 100cqw) - 44px)), max(0px, calc(var(--device-preview-height, 100cqh) - 342px)));
+    margin-inline: auto;
+  }
+}
+
+/* Android Now Playing: 端末キャンバス全体を保存対象として使う。 */
+.app-spotify .spotify-card,
+.app-spotify .device-canvas__content > .spotify-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  padding: clamp(14px, 3cqh, 30px) clamp(16px, 5cqw, 46px) clamp(16px, 3cqh, 30px);
+  color: var(--card-text);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: hidden;
+  isolation: isolate;
+}
+.app-spotify .spotify-card { container-type: size; }
+.app-spotify .spotify-backdrop {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  filter: blur(48px) saturate(0.85) brightness(0.58);
+  opacity: 0.8;
+  transform: none;
+}
+.app-spotify .spotify-backdrop-shade {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(7, 10, 8, 0.62) 0%, rgba(7, 10, 8, 0.18) 25%, rgba(7, 10, 8, 0.46) 64%, rgba(7, 10, 8, 0.94) 100%),
+    rgba(7, 10, 8, 0.22);
+}
+.app-spotify .spotify-card > .card-topbar,
+.app-spotify .spotify-card > .spotify-player-body,
+.app-spotify .spotify-card > .device-row { position: relative; z-index: 1; }
+.app-spotify .card-topbar {
+  flex: 0 0 auto;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+}
+.app-spotify .playing-label {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  text-align: center;
+  font-size: clamp(9px, 2.3cqw, 14px);
+  font-weight: 650;
+  line-height: 1.15;
+  letter-spacing: 0.03em;
+  text-transform: none;
+  opacity: 0.9;
+}
+.app-spotify .playing-label strong { font-size: 0.88em; font-weight: 500; opacity: 0.68; }
+.app-spotify .card-topbar .icon-button {
+  width: clamp(30px, 8cqw, 44px);
+  height: clamp(30px, 8cqw, 44px);
+}
+.app-spotify .card-topbar .icon-button svg { width: 58%; height: 58%; }
+.app-spotify .spotify-player-body {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+}
+.app-spotify .spotify-artwork-stage {
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  padding: clamp(10px, 2.4cqh, 24px) 0;
+  overflow: hidden;
+}
+.app-spotify .artwork {
+  flex: 0 0 auto;
+  width: min(100%, max(0px, calc(100cqw - 32px)), max(0px, calc(100cqh - 410px)));
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  aspect-ratio: 1;
+  margin: 0;
+  border-radius: clamp(6px, 1.7cqw, 16px);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45);
+}
+.app-spotify .spotify-controls {
+  width: min(100%, 620px);
+  min-width: 0;
+  margin-inline: auto;
+}
+.app-spotify .track-row {
+  align-items: flex-end;
+  gap: clamp(10px, 2.6cqw, 18px);
+  margin: 0 0 clamp(12px, 2cqh, 20px);
+}
+.app-spotify .track-title { font-size: clamp(17px, 4.4cqw, 30px); line-height: 1.2; }
+.app-spotify .track-artist { margin-top: 4px; font-size: clamp(12px, 3cqw, 19px); }
+.app-spotify .heart-button {
+  flex: 0 0 auto;
+  width: clamp(32px, 8.5cqw, 46px);
+  height: clamp(32px, 8.5cqw, 46px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: var(--card-text);
+}
+.app-spotify .heart-button svg { width: 62%; height: 62%; fill: none; }
+.app-spotify .range-shell { height: clamp(18px, 2.8cqh, 24px); }
+.app-spotify .range-track,
+.app-spotify .range-fill { height: clamp(4px, 0.6cqh, 7px); }
+.app-spotify .time-row { font-size: clamp(9px, 2.2cqw, 13px); }
+.app-spotify .transport {
+  gap: clamp(4px, 2cqw, 18px);
+  margin: clamp(13px, 2.6cqh, 24px) 0 clamp(4px, 1.2cqh, 12px);
+}
+.app-spotify .transport .minor { width: clamp(28px, 7.5cqw, 42px); height: clamp(28px, 7.5cqw, 42px); }
+.app-spotify .transport .skip { width: clamp(34px, 9cqw, 52px); height: clamp(34px, 9cqw, 52px); }
+.app-spotify .transport .skip svg { width: 68%; height: 68%; }
+.app-spotify .play-button { width: clamp(50px, 14cqw, 76px); height: clamp(50px, 14cqw, 76px); }
+.app-spotify .play-button svg { width: 48%; height: 48%; }
+.app-spotify .device-row {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  width: min(100%, 620px);
+  min-height: clamp(28px, 5cqh, 44px);
+  margin: clamp(7px, 1.4cqh, 14px) auto 0;
+  color: var(--card-muted);
+  font-size: clamp(9px, 2.2cqw, 13px);
+}
+.app-spotify .device-copy,
+.app-spotify .queue-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 28px;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.app-spotify .device-copy:hover,
+.app-spotify .queue-button:hover { color: var(--card-text); }
+.app-spotify .device-copy:focus-visible,
+.app-spotify .queue-button:focus-visible { outline: 2px solid var(--gen-accent); outline-offset: 3px; }
+.app-spotify .device-copy svg,
+.app-spotify .queue-icon { width: clamp(16px, 4cqw, 24px); height: clamp(16px, 4cqw, 24px); fill: currentColor; }
+.app-spotify .device-copy span { color: var(--gen-accent); font-weight: 650; }
+.app-spotify .editor-range { display: block; width: 100%; accent-color: var(--gen-accent); cursor: pointer; }

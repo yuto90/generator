@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type CSSProperties, type FormEvent } from 'react';
 import { useCapture } from '../../shared/capture/useCapture';
+import { DeviceCanvas, DevicePreviewProvider, DeviceToolbar, useDevicePreview } from '../../shared/device-preview';
 import ImageCropField from '../../shared/image-crop/ImageCropField';
 import { createEditableImage, getEditableImageStyle } from '../../shared/image-crop/image-crop';
 import { calculateProgress, formatTime, parseTime } from '../../shared/player/player-utils';
@@ -42,7 +43,9 @@ interface Status {
   tone: '' | 'success' | 'error';
 }
 
-export default function SpotifyPlayerApp() {
+function SpotifyPlayerContent() {
+  const { outputSize, captureSize, valid } = useDevicePreview();
+
   // ---- フォーム入力 ----
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
@@ -237,9 +240,10 @@ export default function SpotifyPlayerApp() {
   }
 
   async function handleCapture() {
+    if (!valid) return;
     setStatus({ text: '画像を生成しています…', tone: '' });
     try {
-      await capture(cardRef.current, 'spotify_player.png');
+      await capture(cardRef.current, 'spotify_player.png', outputSize, captureSize);
       setStatus({ text: '保存操作を開始しました', tone: 'success' });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -252,33 +256,55 @@ export default function SpotifyPlayerApp() {
   return (
     <div className="app-spotify">
       <div className="app-shell">
-        <section className="preview-stage" aria-label="プレーヤープレビュー">
-          <article className="spotify-card" id="player-card" ref={cardRef}>
+        <section className="preview-stage" aria-label="プレーヤープレビュー" data-device-preview-stage>
+          <div className="device-preview-slot" data-device-preview-slot>
+          <div className="device-preview-stack">
+            <DeviceToolbar />
+            <DeviceCanvas>
+              <article
+                className="spotify-card"
+                id="player-card"
+                ref={cardRef}
+                style={{
+                  containerType: 'size',
+                  '--device-preview-width': `${outputSize.width}px`,
+                  '--device-preview-height': `${outputSize.height}px`,
+                } as CSSProperties}
+              >
+            <div className="spotify-backdrop" style={getEditableImageStyle(applied.cover)} aria-hidden="true" />
+            <div className="spotify-backdrop-shade" aria-hidden="true" />
             <div className="card-topbar">
               <button className="icon-button" type="button" aria-label="閉じる">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.3 8.7a1 1 0 0 1 1.4 0l5.3 5.3 5.3-5.3a1 1 0 1 1 1.4 1.4l-6 6a1 1 0 0 1-1.4 0l-6-6a1 1 0 0 1 0-1.4z" /></svg>
               </button>
-              <span className="playing-label">Now playing</span>
+              <div className="playing-label">
+                <span>プレイリストから再生中</span>
+                <strong>お気に入りの曲</strong>
+              </div>
               <button className="icon-button" type="button" aria-label="その他">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="19" cy="12" r="1.8" /></svg>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="12" cy="19" r="1.8" /></svg>
               </button>
             </div>
 
-            <div
-              className="artwork"
-              id="cover-img"
-              role="img"
-              aria-label="アートワーク"
-              style={getEditableImageStyle(applied.cover)}
-            />
+            <main className="spotify-player-body">
+              <div className="spotify-artwork-stage">
+                <div
+                  className="artwork"
+                  id="cover-img"
+                  role="img"
+                  aria-label="アートワーク"
+                  style={getEditableImageStyle(applied.cover)}
+                />
+              </div>
+              <section className="spotify-controls" aria-label="再生中の曲">
 
             <div className="track-row">
               <div className="track-copy">
                 <div className="track-title" id="song-title">{applied.title}</div>
                 <div className="track-artist" id="song-artist">{applied.artist}</div>
               </div>
-              <button className="icon-button heart-button" type="button" aria-label="お気に入り">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21a1 1 0 0 1-.55-.17C5.8 17.05 3 14.02 3 10.1A5.1 5.1 0 0 1 12 6.8a5.1 5.1 0 0 1 9 3.3c0 3.92-2.8 6.95-8.45 10.73A1 1 0 0 1 12 21z" /></svg>
+              <button className="icon-button heart-button library-button" type="button" aria-label="ライブラリに保存" data-glyph="plus">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.25" fill="none" stroke="currentColor" strokeWidth="1.7" /><path d="M12 8v8m-4-4h8" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" /></svg>
               </button>
             </div>
 
@@ -329,32 +355,22 @@ export default function SpotifyPlayerApp() {
               </button>
             </div>
 
-            <div className="volume-row">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 5v14a1 1 0 0 1-1.65.76L7 16H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h3l4.35-3.76A1 1 0 0 1 13 5zm3.3 3.3a1 1 0 0 1 1.4 0 5.23 5.23 0 0 1 0 7.4 1 1 0 0 1-1.4-1.4 3.24 3.24 0 0 0 0-4.6 1 1 0 0 1 0-1.4z" /></svg>
-              <div className="range-shell">
-                <div className="range-track" />
-                <div className="range-fill" id="volume-fill" style={{ width: `${volume}%` }} />
-                <input
-                  className="range-input"
-                  id="volume-slider"
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={volume}
-                  onChange={handleVolumeInput}
-                  aria-label="音量"
-                />
-              </div>
-            </div>
+              </section>
+            </main>
 
-            <div className="device-row">
-              <div className="device-copy">
+            <footer className="device-row">
+              <button className="device-copy" type="button" aria-label="再生デバイス">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-6l2 3h-2.3l-2-3H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm0 2v10h16V5H4z" /></svg>
-                <span>This device</span>
-              </div>
-              <svg className="queue-icon" viewBox="0 0 24 24" aria-label="キュー"><path d="M4 5h16v2H4V5zm0 6h10v2H4v-2zm0 6h10v2H4v-2zm13-5 5 3-5 3v-6z" /></svg>
-            </div>
-          </article>
+                <span>このデバイス</span>
+              </button>
+              <button className="queue-button" type="button" aria-label="キュー">
+                <svg className="queue-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v2H4V5zm0 6h10v2H4v-2zm0 6h10v2H4v-2zm13-5 5 3-5 3v-6z" /></svg>
+              </button>
+            </footer>
+              </article>
+            </DeviceCanvas>
+          </div>
+          </div>
         </section>
 
         <aside className="editor" aria-label="編集パネル">
@@ -438,6 +454,19 @@ export default function SpotifyPlayerApp() {
               <p className="field-help" id="youtube-help">未入力でも静的画像を生成できます</p>
               <p className="field-error" id="error-youtube" aria-live="polite">{errors.youtube}</p>
             </div>
+            <div>
+              <label className="field-label" htmlFor="in-volume">音量</label>
+              <input
+                className="editor-range"
+                id="in-volume"
+                type="range"
+                min="0"
+                max="100"
+                value={volume}
+                onChange={handleVolumeInput}
+                aria-label="音量"
+              />
+            </div>
             <div className="youtube-player-panel" id="youtube-player-panel" hidden={!panelVisible}>
               <div id="youtube-audio" aria-label="YouTube プレーヤー" ref={yt.containerRef} />
             </div>
@@ -451,7 +480,7 @@ export default function SpotifyPlayerApp() {
                 id="btn-capture"
                 type="button"
                 onClick={handleCapture}
-                disabled={capturing}
+                disabled={capturing || !valid}
               >
                 {capturing ? '画像を生成中…' : '画像として保存'}
               </button>
@@ -461,4 +490,8 @@ export default function SpotifyPlayerApp() {
       </div>
     </div>
   );
+}
+
+export default function SpotifyPlayerApp() {
+  return <DevicePreviewProvider><SpotifyPlayerContent /></DevicePreviewProvider>;
 }

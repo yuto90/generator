@@ -6,6 +6,9 @@
   --glass-border: rgba(255, 255, 255, 0.08);
   --gen-accent: #ff0000;
 }
+.app-ytmusic .device-preview-stack { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
+.app-ytmusic .device-preview-slot { width: 100%; min-width: 0; min-height: 0; height: calc(100dvh - 32px); align-items: center; }
+.app-ytmusic .device-canvas { border-radius: 0; }
 :root[data-theme='light'] .app-ytmusic {
   --glass-bg: rgba(255, 255, 255, 0.76);
   --glass-border: rgba(55, 20, 20, 0.13);
@@ -183,17 +186,27 @@
    YouTube Music player card
    ===================================================== */
 .app-ytmusic .ym-card {
-  width: 340px;
-  max-width: 100%;
-  border-radius: 34px;
-  padding: 18px 24px 0;
+  --ym-pad-x: clamp(18px, 5cqw, 48px);
+  --ym-pad-top: clamp(18px, 3cqh, 40px);
+  --ym-gap: clamp(6px, 1.8cqh, 24px);
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  border-radius: 0;
+  padding: var(--ym-pad-top) var(--ym-pad-x) 0;
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--ym-gap);
   color: var(--player-text, #ffffff);
-  box-shadow:
-    0 24px 64px rgba(0, 0, 0, 0.6),
-    0 1px 0 rgba(255, 255, 255, 0.08) inset;
+  box-shadow: none;
 }
+.app-ytmusic .ym-card { container-type: size; }
+.app-ytmusic .device-canvas__content > .ym-card { width: 100%; height: 100%; max-width: none; }
+
 
 /* top bar */
 .app-ytmusic .ym-topbar {
@@ -201,20 +214,31 @@
   align-items: center;
   justify-content: space-between;
   opacity: 0.85;
-  margin-bottom: 16px;
+  margin: 0;
+  flex: 0 0 auto;
 }
 .app-ytmusic .ym-topbar .ctrl-btn { width: 22px; height: 22px; }
 
 /* artwork: YT Music は角丸控えめのフラットな正方形 */
 .app-ytmusic .ym-artwork {
   aspect-ratio: 1 / 1;
-  width: 100%;
+  width: min(100%, calc(100cqw - (var(--ym-pad-x) * 2)), 52cqh, calc(100cqh - 330px));
+  height: auto;
+  max-height: 52cqh;
+  flex: 0 0 auto;
   border-radius: 8px;
   background-size: cover;
   background-position: center;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-  margin-bottom: 20px;
+  margin: 0 auto;
 }
+
+.app-ytmusic .ym-song-info,
+.app-ytmusic .ym-progress,
+.app-ytmusic .ym-controls,
+.app-ytmusic .ym-volume,
+.app-ytmusic .ym-times { flex: 0 0 auto; }
+.app-ytmusic .ym-song-info { margin: 0; }
 
 /* song info */
 .app-ytmusic .ym-title {
@@ -325,8 +349,9 @@
   justify-content: space-around;
   align-items: center;
   border-top: 1px solid rgba(255, 255, 255, 0.12);
-  margin: 22px -24px 0;
-  padding: 14px 0;
+  margin: 0 calc(var(--ym-pad-x) * -1);
+  padding: 14px var(--ym-pad-x);
+  flex: 0 0 auto;
   font-size: 12px;
   font-weight: 500;
   letter-spacing: 0.08em;
@@ -341,10 +366,29 @@
   opacity: 0.35;
   letter-spacing: 0.03em;
   padding-bottom: 12px;
+  flex: 0 0 auto;
 }
 
 /* ---- Responsive ---- */
 @media (max-width: 768px) {
   .app-ytmusic .maker-layout { flex-direction: column; gap: 16px; padding: 16px; }
   .app-ytmusic .side-panel { position: static !important; width: 100% !important; max-width: 340px; border-radius: 16px; border: 1px solid var(--glass-border); }
+}
+
+/* 短い端末では主要操作を保ったままアートワークを縮小して全体を収める。 */
+@container (max-height: 700px) {
+  .app-ytmusic .ym-card {
+    --ym-pad-top: 14px;
+    --ym-gap: 6px;
+  }
+  .app-ytmusic .ym-artwork {
+    width: min(100%, calc(100cqw - (var(--ym-pad-x) * 2)), 46cqh, calc(100cqh - 294px));
+    max-height: 46cqh;
+  }
+  .app-ytmusic .ym-title { font-size: 17px; }
+  .app-ytmusic .ym-artist { font-size: 13px; }
+  .app-ytmusic .ym-play-btn { width: 52px; height: 52px; }
+  .app-ytmusic .ym-play-btn svg { width: 25px; height: 25px; }
+  .app-ytmusic .ym-tabs { padding-block: 10px; }
+  .app-ytmusic .ym-copyright { padding-bottom: 6px; }
 }
