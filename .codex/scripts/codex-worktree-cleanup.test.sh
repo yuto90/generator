@@ -26,8 +26,8 @@ PY
 
 prepare_repo() {
   local repo="$1"
-  mkdir -p "$repo/.agent-shared/scripts" "$repo/.codex/.runtime"
-  cp "$up_script" "$cleanup_script" "$repo/.agent-shared/scripts/"
+  mkdir -p "$repo/.codex/scripts" "$repo/.codex/.runtime"
+  cp "$up_script" "$cleanup_script" "$repo/.codex/scripts/"
   printf '<!doctype html><title>generator test</title>\n' > "$repo/index.html"
   git -C "$repo" init -q
 }
@@ -48,7 +48,7 @@ test_no_running_server_is_a_noop() {
   log="$tmp_dir/cleanup.log"
   prepare_repo "$repo"
 
-  (cd "$repo" && bash .agent-shared/scripts/codex-worktree-cleanup.sh >"$log")
+  (cd "$repo" && bash .codex/scripts/codex-worktree-cleanup.sh >"$log")
 
   assert_contains "$log" "追跡中の静的サーバーはありません。"
 }
@@ -62,12 +62,12 @@ test_invalid_and_stale_pid_files_are_removed() {
   prepare_repo "$repo"
 
   printf 'invalid\n' > "$pid_file"
-  (cd "$repo" && bash .agent-shared/scripts/codex-worktree-cleanup.sh >"$log")
+  (cd "$repo" && bash .codex/scripts/codex-worktree-cleanup.sh >"$log")
   [ ! -e "$pid_file" ]
   assert_contains "$log" "PIDファイルが不正"
 
   printf '999999\n' > "$pid_file"
-  (cd "$repo" && bash .agent-shared/scripts/codex-worktree-cleanup.sh >"$log")
+  (cd "$repo" && bash .codex/scripts/codex-worktree-cleanup.sh >"$log")
   [ ! -e "$pid_file" ]
   assert_contains "$log" "既に終了しています"
 }
@@ -84,7 +84,7 @@ test_does_not_stop_an_unrelated_command() {
   unrelated_pid=$!
   printf '%s\n' "$unrelated_pid" > "$pid_file"
 
-  (cd "$repo" && bash .agent-shared/scripts/codex-worktree-cleanup.sh >"$log")
+  (cd "$repo" && bash .codex/scripts/codex-worktree-cleanup.sh >"$log")
 
   kill -0 "$unrelated_pid"
   kill "$unrelated_pid"
@@ -107,7 +107,7 @@ test_does_not_stop_a_server_from_another_directory() {
   server_pid=$!
   printf '%s\n' "$server_pid" > "$pid_file"
 
-  (cd "$repo" && bash .agent-shared/scripts/codex-worktree-cleanup.sh >"$log")
+  (cd "$repo" && bash .codex/scripts/codex-worktree-cleanup.sh >"$log")
 
   kill -0 "$server_pid"
   kill "$server_pid"
@@ -124,7 +124,7 @@ test_stops_the_tracked_worktree_server() {
   prepare_repo "$repo"
   port="$(free_port)"
 
-  (cd "$repo" && GENERATOR_PORT="$port" bash .agent-shared/scripts/codex-worktree-up.sh >"$log" 2>&1) &
+  (cd "$repo" && GENERATOR_PORT="$port" bash .codex/scripts/codex-worktree-up.sh >"$log" 2>&1) &
   wrapper_pid=$!
   wait_for_file "$pid_file"
   server_pid="$(tr -d '[:space:]' < "$pid_file")"
@@ -147,7 +147,7 @@ else:
     raise AssertionError(f'server did not become ready: {url}')
 PY
 
-  (cd "$repo" && bash .agent-shared/scripts/codex-worktree-cleanup.sh >/dev/null)
+  (cd "$repo" && bash .codex/scripts/codex-worktree-cleanup.sh >/dev/null)
   wait "$wrapper_pid"
 
   if kill -0 "$server_pid" 2>/dev/null; then

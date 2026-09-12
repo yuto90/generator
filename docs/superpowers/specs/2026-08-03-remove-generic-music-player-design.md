@@ -37,7 +37,7 @@ GitHub Issue #38に基づき、ポータルに登録されている汎用グラ�
   - 旧ハッシュURLの説明例を、残るApple MusicのURLへ更新する。ルーティング実装は変更しない。
 - `README.md`
   - `music_player`の直接アクセスURLを削除する。
-- `.agent-shared/skills/generator-project-guide/SKILL.md`
+- `.agents/skills/generator-project-guide/SKILL.md`
   - ハッシュルートの例を、残るApple MusicのURLへ更新する。
 
 ### 追加するファイル
