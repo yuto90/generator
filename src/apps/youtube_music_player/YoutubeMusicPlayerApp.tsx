@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ChangeEvent, type CSSProperties } from 'react';
 import { useCapture } from '../../shared/capture/useCapture';
+import { DeviceCanvas, DevicePreviewProvider, DeviceToolbar, useDevicePreview } from '../../shared/device-preview';
 import ImageCropField from '../../shared/image-crop/ImageCropField';
 import { createEditableImage, getEditableImageStyle, type EditableImage } from '../../shared/image-crop/image-crop';
 import { ThemeToggle } from '../../shared/theme/ThemeToggle';
@@ -59,8 +60,9 @@ interface AppliedCard {
   textColor: string;
 }
 
-export default function YoutubeMusicPlayerApp() {
+function YoutubeMusicPlayerContent() {
   const { theme } = useTheme();
+  const { outputSize, captureSize, valid } = useDevicePreview();
 
   // ---- フォーム入力 ----
   const [title, setTitle] = useState('');
@@ -166,7 +168,8 @@ export default function YoutubeMusicPlayerApp() {
   }
 
   function handleCapture() {
-    capture(cardRef.current, 'youtube_music_player.png').catch((error: unknown) => {
+    if (!valid) return;
+    capture(cardRef.current, 'youtube_music_player.png', outputSize, captureSize).catch((error: unknown) => {
       const message = error instanceof Error ? error.message : String(error);
       alert(message);
     });
@@ -177,6 +180,9 @@ export default function YoutubeMusicPlayerApp() {
     color: applied.textColor,
     '--player-point': applied.pointColor,
     '--player-text': applied.textColor,
+    '--device-preview-width': `${outputSize.width}px`,
+    '--device-preview-height': `${outputSize.height}px`,
+    containerType: 'size',
   } as CSSProperties;
 
   return (
@@ -187,11 +193,14 @@ export default function YoutubeMusicPlayerApp() {
         ref={yt.containerRef}
       />
 
-      <div className="maker-layout relative flex min-h-screen w-full max-w-[1500px] mx-auto items-center justify-center pr-[340px] max-md:flex-col max-md:px-4 max-md:py-6 max-md:gap-4 max-md:min-h-0 max-md:justify-start">
+      <div className="maker-layout relative flex min-h-screen w-full max-w-[1500px] mx-auto items-center justify-center pr-[340px] max-md:flex-col max-md:px-4 max-md:py-6 max-md:gap-4 max-md:min-h-0 max-md:justify-start" data-device-preview-stage>
 
         {/* ---- Center: YouTube Music player preview ---- */}
-        <div id="capture-area" className="flex w-full justify-center max-md:w-auto">
-          <div className="ym-card" id="player-card" ref={cardRef} style={cardStyle}>
+        <div id="capture-area" className="device-preview-slot flex w-full justify-center max-md:w-auto" data-device-preview-slot>
+          <div className="device-preview-stack">
+            <DeviceToolbar />
+            <DeviceCanvas>
+              <div className="ym-card" id="player-card" ref={cardRef} style={cardStyle}>
 
             {/* Top bar */}
             <div className="ym-topbar">
@@ -208,7 +217,7 @@ export default function YoutubeMusicPlayerApp() {
             <div id="cover-img" className="ym-artwork" style={getEditableImageStyle(applied.cover)} />
 
             {/* Song info */}
-            <div className="flex items-center gap-3 mb-4">
+            <div className="ym-song-info flex items-center gap-3">
               <div className="flex-1 min-w-0">
                 <div className="ym-title" id="song-title">{applied.title}</div>
                 <div className="ym-artist" id="song-artist">{applied.artist}</div>
@@ -222,7 +231,7 @@ export default function YoutubeMusicPlayerApp() {
             </div>
 
             {/* Progress slider */}
-            <div className="slider-wrap" id="progress-wrap">
+            <div className="ym-progress slider-wrap" id="progress-wrap">
               <div className="slider-track" />
               <div className="slider-fill" id="progress-fill" style={{ width: `${progress}%` }} />
               <div className="slider-thumb" id="progress-thumb" style={{ left: `${progress}%` }} />
@@ -243,7 +252,7 @@ export default function YoutubeMusicPlayerApp() {
             </div>
 
             {/* Controls */}
-            <div className="flex items-center justify-between mt-3 px-1">
+            <div className="ym-controls flex items-center justify-between px-1">
               <button className="ctrl-btn ym-sub-btn w-5 h-5" type="button" aria-label="シャッフル">
                 <svg viewBox="0 0 24 24"><path d="M17 4l3.3 3.3-3.3 3.3v-2.3h-1.9c-.9 0-1.7.4-2.2 1.1l-1.2 1.6-1.5-2 1.1-1.5A4.75 4.75 0 0 1 15.1 6H17V4zM3 6h3.9c1.5 0 2.9.7 3.8 1.9l4.2 5.6c.5.7 1.3 1.1 2.2 1.1H19v-2.3l3.3 3.3L19 18.9v-2.3h-1.9c-1.5 0-2.9-.7-3.8-1.9L9.1 9.1C8.6 8.4 7.8 8 6.9 8H3V6zm6 8.6l1.5 2-.4.5c-.9 1.2-2.3 1.9-3.8 1.9H3v-2h3.3c.9 0 1.7-.4 2.2-1.1l.5-.7z" /></svg>
               </button>
@@ -270,7 +279,7 @@ export default function YoutubeMusicPlayerApp() {
             </div>
 
             {/* Volume */}
-            <div className="flex items-center gap-2.5 mt-4">
+            <div className="ym-volume flex items-center gap-2.5">
               <span className="ctrl-btn w-4 h-4 shrink-0 opacity-60">
                 <svg viewBox="0 0 24 24"><path d="M13 4.6v14.8c0 .7-.83 1.07-1.35.6L7.2 16H4.5A1.5 1.5 0 0 1 3 14.5v-5A1.5 1.5 0 0 1 4.5 8h2.7l4.45-4c.52-.47 1.35-.1 1.35.6z" /></svg>
               </span>
@@ -304,6 +313,8 @@ export default function YoutubeMusicPlayerApp() {
             {/* Copyright */}
             <div className="ym-copyright" id="copyright-text">{applied.copyright}</div>
 
+              </div>
+            </DeviceCanvas>
           </div>
         </div>
 
@@ -372,7 +383,7 @@ export default function YoutubeMusicPlayerApp() {
 
           <div className="flex flex-col gap-2.5">
             <button className="btn-primary btn-apply" id="btn-update" type="button" onClick={() => applyPreview()}>適用してプレビュー</button>
-            <button className="btn-primary btn-save" id="btn-capture" type="button" onClick={handleCapture} disabled={capturing}>
+            <button className="btn-primary btn-save" id="btn-capture" type="button" onClick={handleCapture} disabled={capturing || !valid}>
               {capturing ? '画像を生成中…' : '画像として保存'}
             </button>
           </div>
@@ -381,4 +392,8 @@ export default function YoutubeMusicPlayerApp() {
       </div>
     </div>
   );
+}
+
+export default function YoutubeMusicPlayerApp() {
+  return <DevicePreviewProvider><YoutubeMusicPlayerContent /></DevicePreviewProvider>;
 }
